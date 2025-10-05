@@ -35,7 +35,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if user_id:
                 cur.execute(
-                    "SELECT id, email, username, display_name, avatar_url, balance, is_verified, role FROM users WHERE id = %s",
+                    "SELECT id, email, username, display_name, avatar_url, balance, is_verified, has_checkmark, role FROM users WHERE id = %s",
                     (user_id,)
                 )
                 user = cur.fetchone()
@@ -59,7 +59,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'avatar_url': user[4],
                             'balance': float(user[5]),
                             'is_verified': user[6],
-                            'role': user[7],
+                            'has_checkmark': user[7],
+                            'role': user[8],
                             'purchases': [{
                                 'id': p[0],
                                 'title': p[1],

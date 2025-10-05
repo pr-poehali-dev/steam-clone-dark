@@ -37,12 +37,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 search = params.get('search', '')
                 if search:
                     cur.execute(
-                        "SELECT id, email, username, role, balance, is_banned, is_verified, created_at FROM users WHERE username ILIKE %s OR email ILIKE %s ORDER BY created_at DESC",
+                        "SELECT id, email, username, role, balance, is_banned, is_verified, has_checkmark, created_at FROM users WHERE username ILIKE %s OR email ILIKE %s ORDER BY created_at DESC",
                         (f'%{search}%', f'%{search}%')
                     )
                 else:
                     cur.execute(
-                        "SELECT id, email, username, role, balance, is_banned, is_verified, created_at FROM users ORDER BY created_at DESC"
+                        "SELECT id, email, username, role, balance, is_banned, is_verified, has_checkmark, created_at FROM users ORDER BY created_at DESC"
                     )
                 users = cur.fetchall()
                 
@@ -58,7 +58,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'balance': float(u[4]),
                         'is_banned': u[5],
                         'is_verified': u[6],
-                        'created_at': str(u[7])
+                        'has_checkmark': u[7],
+                        'created_at': str(u[8])
                     } for u in users])
                 }
         
@@ -143,11 +144,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif action == 'toggle_verified':
-                user_id = body_data.get('user_id')
-                is_verified = body_data.get('is_verified')
                 cur.execute(
-                    "UPDATE users SET is_verified = %s WHERE id = %s",
-                    (is_verified, user_id)
+                    "UPDATE users SET is_verified = NOT is_verified WHERE id = %s RETURNING is_verified",
+                    (user_id,)
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'toggle_checkmark':
+                cur.execute(
+                    "UPDATE users SET has_checkmark = NOT has_checkmark WHERE id = %s RETURNING has_checkmark",
+                    (user_id,)
                 )
                 conn.commit()
                 

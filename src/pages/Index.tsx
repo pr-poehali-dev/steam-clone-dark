@@ -18,6 +18,8 @@ interface User {
   role: string;
   balance: number;
   is_banned: boolean;
+  is_verified?: boolean;
+  has_checkmark?: boolean;
 }
 
 interface Game {
@@ -49,6 +51,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [frameForm, setFrameForm] = useState({ name: '', image_url: '', price: 0 });
+  const [purchasedGames, setPurchasedGames] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
@@ -174,21 +177,28 @@ const Index = () => {
   };
 
   const purchaseGame = async (gameId: number, price: number) => {
+    if (!user) return;
+    
+    if (user.balance < price) {
+      toast({ title: 'Недостаточно средств', variant: 'destructive' });
+      return;
+    }
+    
     const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'purchase', user_id: user?.id, game_id: gameId })
+      body: JSON.stringify({ action: 'purchase', user_id: user.id, game_id: gameId })
     });
     const data = await res.json();
     
     if (data.success) {
-      const updated = { ...user!, balance: data.new_balance };
+      const updated = { ...user, balance: user.balance - price };
       localStorage.setItem('user', JSON.stringify(updated));
       setUser(updated);
+      setPurchasedGames(prev => new Set(prev).add(gameId));
       toast({ title: 'Игра куплена!' });
-      fetchGames();
     } else {
-      toast({ title: 'Недостаточно средств', variant: 'destructive' });
+      toast({ title: data.error || 'Ошибка покупки', variant: 'destructive' });
     }
   };
 
@@ -464,8 +474,8 @@ const Index = () => {
               </Button>
             )}
             
-            <Button variant="ghost" onClick={handleLogout}>
-              <Icon name="LogOut" size={18} />
+            <Button variant="ghost" onClick={() => setShowProfile(true)}>
+              <Icon name="User" size={18} />
             </Button>
           </div>
         </div>
@@ -499,12 +509,29 @@ const Index = () => {
                       <Badge variant="secondary" className="capitalize">{game.category}</Badge>
                       <Badge variant="outline">{game.age_rating}</Badge>
                     </div>
-                    <Button className="w-full bg-yellow-600 hover:bg-yellow-700 group" asChild>
-                      <a href={game.file_url} target="_blank">
-                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
-                        {game.price === 0 ? 'Скачать' : `Купить за ${game.price} ₽`}
-                      </a>
-                    </Button>
+                    {purchasedGames.has(game.id) ? (
+                      <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
+                        <a href={game.file_url} target="_blank">
+                          <Icon name="Download" size={18} className="mr-2" />
+                          Скачать
+                        </a>
+                      </Button>
+                    ) : game.price === 0 ? (
+                      <Button className="w-full bg-yellow-600 hover:bg-yellow-700 group" asChild>
+                        <a href={game.file_url} target="_blank">
+                          <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                          Скачать
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full bg-yellow-600 hover:bg-yellow-700"
+                        onClick={() => purchaseGame(game.id, game.price)}
+                      >
+                        <Icon name="ShoppingCart" size={18} className="mr-2" />
+                        Купить за {game.price} ₽
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -575,12 +602,29 @@ const Index = () => {
                       <Badge variant="outline">{game.age_rating}</Badge>
                       {game.is_popular && <Badge className="bg-yellow-600">Популярная</Badge>}
                     </div>
-                    <Button className="w-full bg-primary hover:bg-primary/90 group" asChild>
-                      <a href={game.file_url} target="_blank">
-                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
-                        {game.price === 0 ? 'Скачать' : `Купить за ${game.price} ₽`}
-                      </a>
-                    </Button>
+                    {purchasedGames.has(game.id) ? (
+                      <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
+                        <a href={game.file_url} target="_blank">
+                          <Icon name="Download" size={18} className="mr-2" />
+                          Скачать
+                        </a>
+                      </Button>
+                    ) : game.price === 0 ? (
+                      <Button className="w-full bg-primary hover:bg-primary/90 group" asChild>
+                        <a href={game.file_url} target="_blank">
+                          <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                          Скачать
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full bg-primary hover:bg-primary/90"
+                        onClick={() => purchaseGame(game.id, game.price)}
+                      >
+                        <Icon name="ShoppingCart" size={18} className="mr-2" />
+                        Купить за {game.price} ₽
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -712,6 +756,8 @@ const Index = () => {
                           <h3 className="text-lg font-semibold">{u.email}</h3>
                           <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge>
                           {u.is_banned && <Badge variant="destructive">Заблокирован</Badge>}
+                          {u.is_verified && <Badge variant="outline" className="border-blue-500 text-blue-500">Верифицирован</Badge>}
+                          {u.has_checkmark && <Icon name="BadgeCheck" size={20} className="text-green-500" />}
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
@@ -725,12 +771,29 @@ const Index = () => {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => handleUserAction(u.id, u.is_banned ? 'unban' : 'ban')}
-                        variant={u.is_banned ? 'outline' : 'destructive'}
-                      >
-                        {u.is_banned ? 'Разбанить' : 'Забанить'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => handleUserAction(u.id, 'toggle_verified')}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {u.is_verified ? 'Снять верификацию' : 'Верифицировать'}
+                        </Button>
+                        <Button 
+                          onClick={() => handleUserAction(u.id, 'toggle_checkmark')}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {u.has_checkmark ? 'Убрать галочку' : 'Дать галочку'}
+                        </Button>
+                        <Button 
+                          onClick={() => handleUserAction(u.id, u.is_banned ? 'unban' : 'ban')}
+                          variant={u.is_banned ? 'outline' : 'destructive'}
+                          size="sm"
+                        >
+                          {u.is_banned ? 'Разбанить' : 'Забанить'}
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -804,6 +867,15 @@ const Index = () => {
           </section>
         )}
       </main>
+
+      {showProfile && user && (
+        <Profile 
+          user={user} 
+          onUpdate={setUser} 
+          onClose={() => setShowProfile(false)}
+          onLogout={handleLogout}
+        />
+      )}
     </div>
   );
 };

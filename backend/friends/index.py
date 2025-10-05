@@ -36,7 +36,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if action == 'friends':
                 cur.execute(
-                    """SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_verified 
+                    """SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_verified, u.has_checkmark 
                     FROM friendships f 
                     JOIN users u ON f.friend_id = u.id 
                     WHERE f.user_id = %s""",
@@ -53,17 +53,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'username': f[1],
                         'display_name': f[2],
                         'avatar_url': f[3],
-                        'is_verified': f[4]
+                        'is_verified': f[4],
+                        'has_checkmark': f[5]
                     } for f in friends])
                 }
             
             elif action == 'search':
                 search = params.get('search', '')
                 cur.execute(
-                    """SELECT id, username, display_name, avatar_url, is_verified 
+                    """SELECT id, username, display_name, avatar_url, is_verified, has_checkmark 
                     FROM users 
                     WHERE (username ILIKE %s OR display_name ILIKE %s) AND id != %s
-                    ORDER BY is_verified DESC, username ASC""",
+                    ORDER BY has_checkmark DESC, is_verified DESC, username ASC""",
                     (f'%{search}%', f'%{search}%', user_id)
                 )
                 users = cur.fetchall()
@@ -77,7 +78,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'username': u[1],
                         'display_name': u[2],
                         'avatar_url': u[3],
-                        'is_verified': u[4]
+                        'is_verified': u[4],
+                        'has_checkmark': u[5]
                     } for u in users])
                 }
             

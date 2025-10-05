@@ -13,9 +13,10 @@ interface ProfileProps {
   user: any;
   onUpdate: (user: any) => void;
   onClose: () => void;
+  onLogout: () => void;
 }
 
-export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
+export default function Profile({ user, onUpdate, onClose, onLogout }: ProfileProps) {
   const [profile, setProfile] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
   const [friends, setFriends] = useState<any[]>([]);
@@ -163,12 +164,13 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
         </DialogHeader>
 
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile">Профиль</TabsTrigger>
             <TabsTrigger value="friends">Друзья</TabsTrigger>
             <TabsTrigger value="library">Библиотека</TabsTrigger>
             <TabsTrigger value="frames-shop">Рамки</TabsTrigger>
             <TabsTrigger value="my-frames">Мои рамки</TabsTrigger>
+            <TabsTrigger value="settings">Настройки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -185,7 +187,7 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
                   <>
                     <h3 className="text-2xl font-bold flex items-center gap-2">
                       {profile?.display_name || profile?.username}
-                      {profile?.is_verified && <Icon name="BadgeCheck" size={20} className="text-green-500" />}
+                      {profile?.has_checkmark && <Icon name="BadgeCheck" size={20} className="text-green-500" />}
                     </h3>
                     <p className="text-muted-foreground">@{profile?.username}</p>
                     <Button onClick={() => setEditMode(true)} variant="outline" size="sm" className="mt-2">
@@ -234,7 +236,7 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
                       <div>
                         <p className="font-semibold flex items-center gap-1">
                           {friend.display_name || friend.username}
-                          {friend.is_verified && <Icon name="BadgeCheck" size={16} className="text-green-500" />}
+                          {friend.has_checkmark && <Icon name="BadgeCheck" size={16} className="text-green-500" />}
                         </p>
                         <p className="text-sm text-muted-foreground">@{friend.username}</p>
                       </div>
@@ -257,7 +259,7 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
                       <div>
                         <p className="font-semibold flex items-center gap-1">
                           {user.display_name || user.username}
-                          {user.is_verified && <Icon name="BadgeCheck" size={16} className="text-green-500" />}
+                          {user.has_checkmark && <Icon name="BadgeCheck" size={16} className="text-green-500" />}
                         </p>
                         <p className="text-sm text-muted-foreground">@{user.username}</p>
                       </div>
@@ -329,6 +331,42 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
             {userFrames.length === 0 && (
               <p className="col-span-2 text-center text-muted-foreground py-8">Нет рамок</p>
             )}
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Настройки аккаунта</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Email</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Баланс</p>
+                    <p className="text-sm text-muted-foreground">{user.balance} ₽</p>
+                  </div>
+                </div>
+                {profile?.is_verified && (
+                  <div className="flex items-center gap-2 text-blue-500">
+                    <Icon name="Shield" size={20} />
+                    <span className="font-medium">Верифицированный аккаунт</span>
+                  </div>
+                )}
+                {profile?.has_checkmark && (
+                  <div className="flex items-center gap-2 text-green-500">
+                    <Icon name="BadgeCheck" size={20} />
+                    <span className="font-medium">Проверенный профиль</span>
+                  </div>
+                )}
+                <Button variant="destructive" onClick={onLogout} className="w-full">
+                  <Icon name="LogOut" size={18} className="mr-2" />
+                  Выйти из аккаунта
+                </Button>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
 
