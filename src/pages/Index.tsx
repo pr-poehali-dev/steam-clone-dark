@@ -114,43 +114,67 @@ const Index = () => {
   }, [user]);
 
   const fetchAllFrames = async () => {
-    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get_frames' })
-    });
-    const data = await res.json();
-    setAllFrames(data);
+    try {
+      const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_frames' })
+      });
+      const data = await res.json();
+      setAllFrames(data);
+    } catch (err) {
+      console.error('Error fetching frames:', err);
+    }
   };
 
   const fetchGames = async () => {
-    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=approved');
-    const data = await response.json();
-    setGames(data);
+    try {
+      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=approved');
+      const data = await response.json();
+      setGames(data);
+    } catch (err) {
+      console.error('Error fetching games:', err);
+    }
   };
 
   const fetchPopularGames = async () => {
-    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=popular');
-    const data = await response.json();
-    setPopularGames(data);
+    try {
+      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=popular');
+      const data = await response.json();
+      setPopularGames(data);
+    } catch (err) {
+      console.error('Error fetching popular games:', err);
+    }
   };
 
   const fetchPendingGames = async () => {
-    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=pending');
-    const data = await response.json();
-    setPendingGames(data);
+    try {
+      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=pending');
+      const data = await response.json();
+      setPendingGames(data);
+    } catch (err) {
+      console.error('Error fetching pending games:', err);
+    }
   };
 
   const fetchAllGames = async () => {
-    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=all');
-    const data = await response.json();
-    setAllGames(data);
+    try {
+      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=all');
+      const data = await response.json();
+      setAllGames(data);
+    } catch (err) {
+      console.error('Error fetching all games:', err);
+    }
   };
 
   const fetchUsers = async () => {
-    const response = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a?action=users');
-    const data = await response.json();
-    setAllUsers(data);
+    try {
+      const response = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a?action=users');
+      const data = await response.json();
+      setAllUsers(data);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
   };
 
   const handleAuth = async () => {

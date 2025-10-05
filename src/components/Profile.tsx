@@ -143,11 +143,6 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
     const res = await fetch(`https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?user_id=${user.id}`);
     const data = await res.json();
     setProfile(data);
-    setEditForm({
-      username: data.username || '',
-      display_name: data.display_name || '',
-      avatar_url: data.avatar_url || ''
-    });
   };
 
   const fetchFriends = async () => {
@@ -228,8 +223,8 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
             <div className="flex items-center gap-4">
               <div className="relative w-20 h-20">
                 <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                  {editForm.avatar_url ? (
-                    <img src={editForm.avatar_url} className="w-full h-full object-cover" />
+                  {(editMode ? editForm.avatar_url : profile?.avatar_url) ? (
+                    <img src={editMode ? editForm.avatar_url : profile?.avatar_url} className="w-full h-full object-cover" />
                   ) : (
                     <Icon name="User" size={40} className="text-primary" />
                   )}
@@ -250,7 +245,14 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                       {profile?.has_checkmark && <Icon name="BadgeCheck" size={20} className="text-green-500" />}
                     </h3>
                     <p className="text-muted-foreground">@{profile?.username}</p>
-                    <Button onClick={() => setEditMode(true)} variant="outline" size="sm" className="mt-2">
+                    <Button onClick={() => {
+                      setEditForm({
+                        username: profile?.username || '',
+                        display_name: profile?.display_name || '',
+                        avatar_url: profile?.avatar_url || ''
+                      });
+                      setEditMode(true);
+                    }} variant="outline" size="sm" className="mt-2">
                       <Icon name="Edit" size={16} className="mr-2" />
                       Редактировать
                     </Button>
