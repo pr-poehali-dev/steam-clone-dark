@@ -143,6 +143,11 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
     const res = await fetch(`https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?user_id=${user.id}`);
     const data = await res.json();
     setProfile(data);
+    setEditForm({
+      username: data.username || '',
+      display_name: data.display_name || '',
+      avatar_url: data.avatar_url || ''
+    });
   };
 
   const fetchFriends = async () => {
