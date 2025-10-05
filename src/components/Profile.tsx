@@ -63,6 +63,11 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
 
     const updated = { ...user, balance: user.balance - frame.price };
     localStorage.setItem('user', JSON.stringify(updated));
+    
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: any) => u.id === user.id ? updated : u);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     onUpdate(updated);
 
     loadUserFrames();
@@ -72,6 +77,11 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
   const setActiveFrame = (frameId: number) => {
     const updated = { ...user, active_frame_id: frameId };
     localStorage.setItem('user', JSON.stringify(updated));
+    
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: any) => u.id === user.id ? updated : u);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     onUpdate(updated);
     toast({ title: 'Рамка установлена' });
   };
@@ -79,6 +89,11 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
   const updateProfile = () => {
     const updated = { ...user, ...editForm };
     localStorage.setItem('user', JSON.stringify(updated));
+    
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: any) => u.id === user.id ? updated : u);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     onUpdate(updated);
     setEditMode(false);
     toast({ title: 'Профиль обновлён' });

@@ -156,7 +156,10 @@ const Index = () => {
   };
 
   const purchaseGame = (game: Game) => {
-    if (!user) return;
+    if (!user) {
+      toast({ title: 'Войдите для покупки игр', variant: 'destructive' });
+      return;
+    }
     
     if (user.balance < game.price) {
       toast({ title: 'Недостаточно средств', variant: 'destructive' });
@@ -179,7 +182,19 @@ const Index = () => {
     localStorage.setItem('user', JSON.stringify(updated));
     setUser(updated);
     
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: User) => u.id === user.id ? updated : u);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     toast({ title: 'Игра куплена!' });
+  };
+
+  const downloadGame = (game: Game) => {
+    if (!user) {
+      toast({ title: 'Войдите для скачивания игр', variant: 'destructive' });
+      return;
+    }
+    window.open(game.file_url, '_blank');
   };
 
   const handleGameAction = (gameId: number, status: string) => {
@@ -491,18 +506,14 @@ const Index = () => {
                       <Badge variant="outline">{game.age_rating}</Badge>
                     </div>
                     {purchasedGames.some((g: any) => g.id === game.id) ? (
-                      <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
-                        <a href={game.file_url} target="_blank">
-                          <Icon name="Download" size={18} className="mr-2" />
-                          Скачать
-                        </a>
+                      <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => downloadGame(game)}>
+                        <Icon name="Download" size={18} className="mr-2" />
+                        Скачать
                       </Button>
                     ) : game.price === 0 ? (
-                      <Button className="w-full bg-yellow-600 hover:bg-yellow-700 group" asChild>
-                        <a href={game.file_url} target="_blank">
-                          <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
-                          Скачать
-                        </a>
+                      <Button className="w-full bg-yellow-600 hover:bg-yellow-700 group" onClick={() => downloadGame(game)}>
+                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                        Скачать
                       </Button>
                     ) : (
                       <Button 
@@ -590,18 +601,14 @@ const Index = () => {
                       {game.is_popular && <Badge className="bg-yellow-600">Популярная</Badge>}
                     </div>
                     {purchasedGames.some((g: any) => g.id === game.id) ? (
-                      <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
-                        <a href={game.file_url} target="_blank">
-                          <Icon name="Download" size={18} className="mr-2" />
-                          Скачать
-                        </a>
+                      <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => downloadGame(game)}>
+                        <Icon name="Download" size={18} className="mr-2" />
+                        Скачать
                       </Button>
                     ) : game.price === 0 ? (
-                      <Button className="w-full bg-primary hover:bg-primary/90 group" asChild>
-                        <a href={game.file_url} target="_blank">
-                          <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
-                          Скачать
-                        </a>
+                      <Button className="w-full bg-primary hover:bg-primary/90 group" onClick={() => downloadGame(game)}>
+                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                        Скачать
                       </Button>
                     ) : (
                       <Button 
@@ -617,6 +624,57 @@ const Index = () => {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+            <Icon name="Store" size={32} className="text-primary" />
+            Торговая площадка
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {games.slice(0, 8).map((game) => (
+              <Card key={game.id} className="overflow-hidden hover:border-primary transition-all hover:shadow-lg group">
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+                  {game.logo_url ? (
+                    <img src={game.logo_url} alt={game.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="Gamepad2" size={48} className="text-primary/40" />
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold line-clamp-1 flex-1">{game.title}</h3>
+                    {game.price === 0 ? (
+                      <Badge className="bg-green-600 ml-2">FREE</Badge>
+                    ) : (
+                      <Badge className="ml-2">{game.price} ₽</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{game.description}</p>
+                  <div className="flex gap-2 mb-3">
+                    <Badge variant="secondary" className="text-xs">{game.category}</Badge>
+                    <Badge variant="outline" className="text-xs">{game.age_rating}</Badge>
+                  </div>
+                  {purchasedGames.some((g: any) => g.id === game.id) ? (
+                    <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => downloadGame(game)}>
+                      <Icon name="Download" size={16} className="mr-2" />
+                      Скачать
+                    </Button>
+                  ) : game.price === 0 ? (
+                    <Button className="w-full" onClick={() => downloadGame(game)}>
+                      <Icon name="Download" size={16} className="mr-2" />
+                      Скачать
+                    </Button>
+                  ) : (
+                    <Button className="w-full" onClick={() => purchaseGame(game)}>
+                      <Icon name="ShoppingCart" size={16} className="mr-2" />
+                      Купить
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
         </section>
 
         {user.role === 'admin' && (
@@ -735,7 +793,7 @@ const Index = () => {
                     className="max-w-md"
                   />
                 </div>
-                {filteredUsers.map((u: User) => (
+                {filteredUsers.length > 0 ? filteredUsers.map((u: User) => (
                   <Card key={u.id} className="p-6">
                     <div className="flex justify-between items-center">
                       <div>
@@ -757,7 +815,9 @@ const Index = () => {
                       </div>
                     </div>
                   </Card>
-                ))}
+                )) : (
+                  <p className="text-center text-muted-foreground py-8">Пользователи не найдены</p>
+                )}
               </TabsContent>
 
               <TabsContent value="frames" className="space-y-4">
