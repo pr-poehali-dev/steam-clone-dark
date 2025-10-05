@@ -209,26 +209,19 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
         </DialogHeader>
 
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="profile">Профиль</TabsTrigger>
-            <TabsTrigger value="friends">Друзья</TabsTrigger>
-            <TabsTrigger value="library">Библиотека</TabsTrigger>
-            <TabsTrigger value="market">Маркет</TabsTrigger>
-            <TabsTrigger value="frames-shop">Рамки</TabsTrigger>
-            <TabsTrigger value="my-frames">Мои рамки</TabsTrigger>
-            <TabsTrigger value="settings">Настройки</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 gap-1 overflow-x-auto">
+            <TabsTrigger value="profile" className="text-xs sm:text-sm whitespace-nowrap">Профиль</TabsTrigger>
+            <TabsTrigger value="friends" className="text-xs sm:text-sm whitespace-nowrap">Друзья</TabsTrigger>
+            <TabsTrigger value="library" className="text-xs sm:text-sm whitespace-nowrap">Библиотека</TabsTrigger>
+            <TabsTrigger value="market" className="text-xs sm:text-sm whitespace-nowrap">Маркет</TabsTrigger>
+            <TabsTrigger value="frames-shop" className="text-xs sm:text-sm whitespace-nowrap">Рамки</TabsTrigger>
+            <TabsTrigger value="my-frames" className="text-xs sm:text-sm whitespace-nowrap">Мои рамки</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm whitespace-nowrap">Настройки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="relative w-20 h-20">
-                {profile?.active_frame_id && userFrames.find(f => f.id === profile.active_frame_id) && (
-                  <img 
-                    src={userFrames.find(f => f.id === profile.active_frame_id)?.image_url} 
-                    alt="Frame" 
-                    className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none"
-                  />
-                )}
                 <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                   {editForm.avatar_url ? (
                     <img src={editForm.avatar_url} className="w-full h-full object-cover" />
@@ -236,6 +229,13 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                     <Icon name="User" size={40} className="text-primary" />
                   )}
                 </div>
+                {profile?.active_frame_id && userFrames.find(f => f.id === profile.active_frame_id) && (
+                  <img 
+                    src={userFrames.find(f => f.id === profile.active_frame_id)?.image_url} 
+                    alt="Frame" 
+                    className="absolute inset-0 w-20 h-20 object-cover z-10 pointer-events-none"
+                  />
+                )}
               </div>
               <div className="flex-1">
                 {!editMode ? (
@@ -286,12 +286,12 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                   <Card key={friend.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="relative w-10 h-10">
-                        {friend.frame_url && (
-                          <img src={friend.frame_url} alt="Frame" className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none" />
-                        )}
                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                           {friend.avatar_url ? <img src={friend.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
                         </div>
+                        {friend.frame_url && (
+                          <img src={friend.frame_url} alt="Frame" className="absolute inset-0 w-10 h-10 object-cover z-10 pointer-events-none" />
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold flex items-center gap-1">
@@ -314,12 +314,12 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                   <Card key={user.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="relative w-10 h-10">
-                        {user.frame_url && (
-                          <img src={user.frame_url} alt="Frame" className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none" />
-                        )}
                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                           {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
                         </div>
+                        {user.frame_url && (
+                          <img src={user.frame_url} alt="Frame" className="absolute inset-0 w-10 h-10 object-cover z-10 pointer-events-none" />
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold flex items-center gap-1">
@@ -341,19 +341,45 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
           <TabsContent value="library" className="space-y-2">
             {profile?.purchases?.map((game: any) => (
               <Card key={game.id} className="p-4">
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   {game.logo_url && (
-                    <img src={game.logo_url} alt={game.title} className="w-20 h-20 object-cover rounded" />
+                    <img src={game.logo_url} alt={game.title} className="w-full sm:w-20 h-40 sm:h-20 object-cover rounded" />
                   )}
                   <div className="flex-1">
                     <h3 className="font-bold">{game.title}</h3>
                     <p className="text-sm text-muted-foreground mb-2">{game.description}</p>
-                    <Button asChild size="sm" className="bg-green-600">
-                      <a href={game.file_url} target="_blank">
-                        <Icon name="Download" size={16} className="mr-2" />
-                        Скачать
-                      </a>
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button asChild size="sm" className="bg-green-600">
+                        <a href={game.file_url} target="_blank">
+                          <Icon name="Download" size={16} className="mr-2" />
+                          Скачать
+                        </a>
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={async () => {
+                          const res = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: user.id, game_id: game.id })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            const updated = { ...user, balance: data.new_balance };
+                            localStorage.setItem('user', JSON.stringify(updated));
+                            onUpdate(updated);
+                            fetchProfile();
+                            toast({ title: `Возвращено ${data.refund} монет (90% от ${game.price})` });
+                          } else {
+                            toast({ title: data.error, variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <Icon name="Trash2" size={16} className="mr-2" />
+                        Удалить
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>

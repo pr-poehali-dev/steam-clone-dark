@@ -377,13 +377,13 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Icon name="Gamepad2" size={28} className="text-primary" />
             <h1 className="text-2xl font-bold">FTEAM</h1>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 w-full md:w-auto">
             <div className="flex items-center gap-2">
               <Icon name="Wallet" size={20} className="text-muted-foreground" />
               <span className="font-semibold">{user.balance.toFixed(2)} ₽</span>
@@ -401,7 +401,8 @@ const Index = () => {
               <DialogTrigger asChild>
                 <Button variant="outline" className="gap-2">
                   <Icon name="Upload" size={18} />
-                  Опубликовать игру
+                  <span className="hidden sm:inline">Опубликовать игру</span>
+                  <span className="sm:hidden">Опубликовать</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -519,7 +520,8 @@ const Index = () => {
               <Button variant="default" asChild className="bg-primary">
                 <a href="#admin">
                   <Icon name="Shield" size={18} className="mr-2" />
-                  Админ панель
+                  <span className="hidden sm:inline">Админ панель</span>
+                  <span className="sm:hidden">Админ</span>
                 </a>
               </Button>
             )}
@@ -538,7 +540,7 @@ const Index = () => {
               <Icon name="TrendingUp" size={32} className="text-yellow-500" />
               Популярные игры
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {popularGames.map((game) => (
                 <Card key={game.id} className="overflow-hidden hover:border-yellow-500 transition-all hover:shadow-lg hover:shadow-yellow-500/20 group animate-fade-in border-yellow-500/30">
                   <div className="aspect-video bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center relative overflow-hidden">
@@ -636,7 +638,7 @@ const Index = () => {
               <p className="text-xl text-muted-foreground">Игры не найдены</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredGames.map((game) => (
                 <Card key={game.id} className="overflow-hidden hover:border-primary transition-all hover:shadow-lg hover:shadow-primary/20 group animate-fade-in">
                   <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
@@ -699,35 +701,35 @@ const Index = () => {
             <h2 className="text-3xl font-bold mb-6">Админ панель</h2>
             
             <Tabs defaultValue="moderation" className="space-y-6">
-              <TabsList>
-                <TabsTrigger value="moderation">Модерация игр</TabsTrigger>
-                <TabsTrigger value="all-games">Все игры</TabsTrigger>
-                <TabsTrigger value="users">Пользователи</TabsTrigger>
-                <TabsTrigger value="frames">Рамки</TabsTrigger>
+              <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full sm:w-auto">
+                <TabsTrigger value="moderation" className="text-xs sm:text-sm">Модерация</TabsTrigger>
+                <TabsTrigger value="all-games" className="text-xs sm:text-sm">Все игры</TabsTrigger>
+                <TabsTrigger value="users" className="text-xs sm:text-sm">Пользователи</TabsTrigger>
+                <TabsTrigger value="frames" className="text-xs sm:text-sm">Рамки</TabsTrigger>
               </TabsList>
               
               <TabsContent value="moderation" className="space-y-4">
                 {pendingGames.map((game) => (
-                  <Card key={game.id} className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-2">{game.title}</h3>
-                        <p className="text-muted-foreground mb-3">{game.description}</p>
-                        <div className="flex gap-2 mb-3">
-                          <Badge>{game.category}</Badge>
-                          <Badge variant="outline">{game.age_rating}</Badge>
-                          <Badge variant="secondary">От: {game.publisher_login}</Badge>
+                  <Card key={game.id} className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      <div className="flex-1 w-full">
+                        <h3 className="text-lg sm:text-xl font-bold mb-2">{game.title}</h3>
+                        <p className="text-muted-foreground mb-3 text-sm sm:text-base">{game.description}</p>
+                        <div className="flex gap-2 mb-3 flex-wrap">
+                          <Badge className="text-xs">{game.category}</Badge>
+                          <Badge variant="outline" className="text-xs">{game.age_rating}</Badge>
+                          <Badge variant="secondary" className="text-xs">От: {game.publisher_login}</Badge>
                         </div>
                         <a href={game.file_url} target="_blank" className="text-primary hover:underline text-sm flex items-center gap-1">
                           <Icon name="Download" size={16} />
                           Скачать файл
                         </a>
                       </div>
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleGameAction(game.id, 'approved')} variant="default" className="bg-green-600 hover:bg-green-700">
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button onClick={() => handleGameAction(game.id, 'approved')} variant="default" className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none">
                           <Icon name="Check" size={18} />
                         </Button>
-                        <Button onClick={() => handleGameAction(game.id, 'rejected')} variant="destructive">
+                        <Button onClick={() => handleGameAction(game.id, 'rejected')} variant="destructive" className="flex-1 sm:flex-none">
                           <Icon name="X" size={18} />
                         </Button>
                       </div>

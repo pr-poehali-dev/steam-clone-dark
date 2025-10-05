@@ -115,14 +115,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            body_data = json.loads(event.get('body', '{}'))
+            user_id = body_data.get('user_id')
+            game_id = body_data.get('game_id')
+            
+            if user_id and game_id:
+                cur.execute(
+                    "SELECT price FROM t_p84121358_steam_clone_dark.games WHERE id = %s",
+                    (game_id,)
+                )
+                game = cur.fetchone()
+                
+                if game:
+                    game_price = float(game[0]) if game[0] else 0
+                    refund = int(game_price * 0.9)
+                    
+                    cur.execute(
+                        "DELETE FROM t_p84121358_steam_clone_dark.purchases WHERE user_id = %s AND game_id = %s",
+                        (user_id, game_id)
+                    )
+                    
+                    cur.execute(
+                        "UPDATE t_p84121358_steam_clone_dark.users SET balance = balance + %s WHERE id = %s RETURNING balance",
+                        (refund, user_id)
+                    )
+                    new_balance = cur.fetchone()[0]
+                    conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'success': True, 'refund': refund, 'new_balance': new_balance})
+                    }
+            
             params = event.get('queryStringParameters', {})
             game_id = params.get('id')
             
-            cur.execute(
-                "DELETE FROM t_p84121358_steam_clone_dark.games WHERE id = %s",
-                (game_id,)
-            )
-            conn.commit()
+            if game_id:
+                cur.execute(
+                    "DELETE FROM t_p84121358_steam_clone_dark.games WHERE id = %s",
+                    (game_id,)
+                )
+                conn.commit()
             
             return {
                 'statusCode': 200,
