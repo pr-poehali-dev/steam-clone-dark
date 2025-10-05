@@ -99,10 +99,12 @@ const Index = () => {
         return;
       }
       
+      const isFirstUser = users.length === 0;
+      
       const newUser: User = {
         id: Date.now(),
         email: authForm.email,
-        role: 'user',
+        role: isFirstUser ? 'admin' : 'user',
         balance: 1000,
         username: authForm.email.split('@')[0],
         display_name: authForm.email.split('@')[0]
@@ -112,7 +114,7 @@ const Index = () => {
       localStorage.setItem('users', JSON.stringify(users));
       localStorage.setItem('user', JSON.stringify(newUser));
       setUser(newUser);
-      toast({ title: 'Регистрация завершена' });
+      toast({ title: isFirstUser ? 'Вы администратор! Регистрация завершена' : 'Регистрация завершена' });
     } else {
       const found = users.find((u: User) => u.email === authForm.email);
       if (!found) {
