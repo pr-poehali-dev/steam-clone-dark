@@ -17,9 +17,10 @@ interface User {
   email: string;
   role: string;
   balance: number;
-  is_banned: boolean;
-  is_verified?: boolean;
-  has_checkmark?: boolean;
+  username?: string;
+  display_name?: string;
+  avatar_url?: string;
+  active_frame_id?: number;
 }
 
 interface Game {
@@ -39,20 +40,13 @@ interface Game {
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<Game[]>([]);
-  const [popularGames, setPopularGames] = useState<Game[]>([]);
-  const [pendingGames, setPendingGames] = useState<Game[]>([]);
-  const [allGames, setAllGames] = useState<Game[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [allFrames, setAllFrames] = useState<any[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [frameForm, setFrameForm] = useState({ name: '', image_url: '', price: 0 });
-  const [purchasedGames, setPurchasedGames] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
@@ -63,22 +57,10 @@ const Index = () => {
     age_rating: '',
     file_url: '',
     logo_url: '',
-    price: 0,
-    contact_email: ''
+    price: 0
   });
 
   const categories = ['all', 'action', 'adventure', 'puzzle', 'strategy'];
-  
-  const filteredGames = games.filter(game => {
-    const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
-    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          game.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const filteredUsers = allUsers.filter(u => 
-    u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
-  );
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -86,263 +68,195 @@ const Index = () => {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
-        loadPurchasedGames(userData.id);
       } catch (e) {
         localStorage.removeItem('user');
       }
     }
-    fetchGames();
-    fetchPopularGames();
+    loadGames();
   }, []);
 
-  const loadPurchasedGames = async (userId: number) => {
-    const res = await fetch(`https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?user_id=${userId}`);
-    const data = await res.json();
-    if (data.purchases) {
-      const gameIds = new Set(data.purchases.map((p: any) => p.id));
-      setPurchasedGames(gameIds);
-    }
+  const loadGames = () => {
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    setGames(allGames.filter((g: Game) => g.status === 'approved'));
   };
 
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      fetchPendingGames();
-      fetchUsers();
-      fetchAllGames();
-      fetchAllFrames();
-    }
-  }, [user]);
+  const filteredGames = games.filter(game => {
+    const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
+    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          game.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  const fetchAllFrames = async () => {
-    try {
-      const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get_frames' })
-      });
-      const data = await res.json();
-      setAllFrames(data);
-    } catch (err) {
-      console.error('Error fetching frames:', err);
-    }
-  };
+  const popularGames = games.filter(g => g.is_popular);
 
-  const fetchGames = async () => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=approved');
-      const data = await response.json();
-      setGames(data);
-    } catch (err) {
-      console.error('Error fetching games:', err);
-    }
-  };
-
-  const fetchPopularGames = async () => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=popular');
-      const data = await response.json();
-      setPopularGames(data);
-    } catch (err) {
-      console.error('Error fetching popular games:', err);
-    }
-  };
-
-  const fetchPendingGames = async () => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=pending');
-      const data = await response.json();
-      setPendingGames(data);
-    } catch (err) {
-      console.error('Error fetching pending games:', err);
-    }
-  };
-
-  const fetchAllGames = async () => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=all');
-      const data = await response.json();
-      setAllGames(data);
-    } catch (err) {
-      console.error('Error fetching all games:', err);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a?action=users');
-      const data = await response.json();
-      setAllUsers(data);
-    } catch (err) {
-      console.error('Error fetching users:', err);
-    }
-  };
-
-  const handleAuth = async () => {
-    const response = await fetch('https://functions.poehali.dev/4e8cbd36-9013-4dc8-b007-66416a15d75c', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: authMode, ...authForm })
-    });
+  const handleAuth = () => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
     
-    const data = await response.json();
-    
-    if (response.ok) {
-      if (data.is_banned) {
-        toast({ title: 'Вы заблокированы', variant: 'destructive' });
+    if (authMode === 'register') {
+      const exists = users.find((u: User) => u.email === authForm.email);
+      if (exists) {
+        toast({ title: 'Пользователь уже существует', variant: 'destructive' });
         return;
       }
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
-      toast({ title: authMode === 'login' ? 'Вход выполнен' : 'Регистрация завершена' });
+      
+      const newUser: User = {
+        id: Date.now(),
+        email: authForm.email,
+        role: 'user',
+        balance: 1000,
+        username: authForm.email.split('@')[0],
+        display_name: authForm.email.split('@')[0]
+      };
+      
+      users.push(newUser);
+      localStorage.setItem('users', JSON.stringify(users));
+      localStorage.setItem('user', JSON.stringify(newUser));
+      setUser(newUser);
+      toast({ title: 'Регистрация завершена' });
     } else {
-      toast({ title: data.error || 'Ошибка', variant: 'destructive' });
+      const found = users.find((u: User) => u.email === authForm.email);
+      if (!found) {
+        toast({ title: 'Пользователь не найден', variant: 'destructive' });
+        return;
+      }
+      
+      localStorage.setItem('user', JSON.stringify(found));
+      setUser(found);
+      toast({ title: 'Вход выполнен' });
     }
   };
 
-  const handlePublishGame = async () => {
-    if (!publishForm.title || !publishForm.description || !publishForm.category || !publishForm.age_rating || !publishForm.file_url || !publishForm.logo_url || !publishForm.contact_email) {
+  const handlePublishGame = () => {
+    if (!publishForm.title || !publishForm.description || !publishForm.category || !publishForm.age_rating || !publishForm.file_url || !publishForm.logo_url) {
       toast({ title: 'Заполните все обязательные поля', variant: 'destructive' });
       return;
     }
     
-    await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...publishForm, publisher_login: user?.email })
-    });
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    const newGame: Game = {
+      id: Date.now(),
+      ...publishForm,
+      publisher_login: user?.email || '',
+      status: user?.role === 'admin' ? 'approved' : 'pending',
+      is_popular: false
+    };
+    
+    allGames.push(newGame);
+    localStorage.setItem('games', JSON.stringify(allGames));
     
     setShowPublishDialog(false);
-    setPublishSuccess(true);
-    setTimeout(() => setPublishSuccess(false), 5000);
-    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', logo_url: '', price: 0, contact_email: '' });
+    toast({ title: user?.role === 'admin' ? 'Игра опубликована!' : 'Игра отправлена на модерацию' });
+    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', logo_url: '', price: 0 });
+    
+    if (user?.role === 'admin') {
+      loadGames();
+    }
   };
 
-  const purchaseGame = async (gameId: number, price: number) => {
+  const purchaseGame = (game: Game) => {
     if (!user) return;
     
-    if (user.balance < price) {
+    if (user.balance < game.price) {
       toast({ title: 'Недостаточно средств', variant: 'destructive' });
       return;
     }
+
+    const purchasedGames = JSON.parse(localStorage.getItem('purchasedGames') || '{}');
+    if (!purchasedGames[user.id]) purchasedGames[user.id] = [];
     
-    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'purchase', user_id: user.id, game_id: gameId })
-    });
-    const data = await res.json();
-    
-    if (data.success) {
-      const updated = { ...user, balance: user.balance - price };
-      localStorage.setItem('user', JSON.stringify(updated));
-      setUser(updated);
-      setPurchasedGames(prev => new Set(prev).add(gameId));
-      toast({ title: 'Игра куплена!' });
-    } else {
-      toast({ title: data.error || 'Ошибка покупки', variant: 'destructive' });
+    const alreadyPurchased = purchasedGames[user.id].some((g: any) => g.id === game.id);
+    if (alreadyPurchased) {
+      toast({ title: 'Игра уже куплена', variant: 'destructive' });
+      return;
     }
+
+    purchasedGames[user.id].push(game);
+    localStorage.setItem('purchasedGames', JSON.stringify(purchasedGames));
+    
+    const updated = { ...user, balance: user.balance - game.price };
+    localStorage.setItem('user', JSON.stringify(updated));
+    setUser(updated);
+    
+    toast({ title: 'Игра куплена!' });
   };
 
-  const handleGameAction = async (gameId: number, status: string) => {
-    await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: gameId, status })
-    });
-    
-    fetchPendingGames();
-    fetchGames();
-    fetchAllGames();
+  const handleGameAction = (gameId: number, status: string) => {
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    const updated = allGames.map((g: Game) => g.id === gameId ? { ...g, status } : g);
+    localStorage.setItem('games', JSON.stringify(updated));
+    loadGames();
     toast({ title: status === 'approved' ? 'Игра одобрена' : 'Игра отклонена' });
   };
 
-  const handleDeleteGame = async (gameId: number) => {
-    await fetch(`https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?id=${gameId}`, {
-      method: 'DELETE'
-    });
-    
-    fetchAllGames();
-    fetchGames();
-    fetchPendingGames();
-    fetchPopularGames();
+  const handleDeleteGame = (gameId: number) => {
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    const updated = allGames.filter((g: Game) => g.id !== gameId);
+    localStorage.setItem('games', JSON.stringify(updated));
+    loadGames();
     toast({ title: 'Игра удалена' });
   };
 
-  const handleUpdateGamePrice = async (gameId: number, price: number) => {
-    await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_game_price', game_id: gameId, price })
-    });
-    
-    fetchAllGames();
-    fetchGames();
+  const handleUpdateGamePrice = (gameId: number, price: number) => {
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    const updated = allGames.map((g: Game) => g.id === gameId ? { ...g, price } : g);
+    localStorage.setItem('games', JSON.stringify(updated));
+    loadGames();
     toast({ title: 'Цена обновлена' });
   };
 
-  const handleTogglePopular = async (gameId: number, isPopular: boolean) => {
-    await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle_popular', game_id: gameId, is_popular: isPopular })
-    });
-    
-    fetchAllGames();
-    fetchGames();
-    fetchPopularGames();
+  const handleTogglePopular = (gameId: number, isPopular: boolean) => {
+    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+    const updated = allGames.map((g: Game) => g.id === gameId ? { ...g, is_popular: isPopular } : g);
+    localStorage.setItem('games', JSON.stringify(updated));
+    loadGames();
     toast({ title: isPopular ? 'Добавлено в популярные' : 'Убрано из популярных' });
   };
 
-  const handleUserAction = async (userId: number, action: string, value?: any) => {
-    const res = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, action, ...value })
-    });
-    
-    fetchUsers();
-    
-    if (action === 'update_balance' && userId === user?.id && value?.balance !== undefined) {
-      const updated = { ...user, balance: value.balance };
-      localStorage.setItem('user', JSON.stringify(updated));
-      setUser(updated);
+  const handleUserAction = (userId: number, action: string, value?: any) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    let updated = users;
+
+    if (action === 'update_balance') {
+      updated = users.map((u: User) => u.id === userId ? { ...u, balance: value.balance } : u);
     }
+
+    localStorage.setItem('users', JSON.stringify(updated));
     
-    if (action === 'ban' && userId === user?.id) {
-      localStorage.removeItem('user');
-      setUser(null);
-      toast({ title: 'Вы заблокированы', variant: 'destructive' });
+    if (userId === user?.id && action === 'update_balance') {
+      const updatedUser = { ...user, balance: value.balance };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
     }
   };
 
-  const handleCreateFrame = async () => {
-    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create_frame', ...frameForm })
-    });
-    fetchAllFrames();
+  const handleCreateFrame = () => {
+    if (!frameForm.name || !frameForm.image_url) {
+      toast({ title: 'Заполните название и URL изображения', variant: 'destructive' });
+      return;
+    }
+
+    const frames = JSON.parse(localStorage.getItem('frames') || '[]');
+    const newFrame = {
+      id: Date.now(),
+      ...frameForm
+    };
+    frames.push(newFrame);
+    localStorage.setItem('frames', JSON.stringify(frames));
     setFrameForm({ name: '', image_url: '', price: 0 });
     toast({ title: 'Рамка создана' });
   };
 
-  const handleDeleteFrame = async (frameId: number) => {
-    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete_frame', frame_id: frameId })
-    });
-    fetchAllFrames();
+  const handleDeleteFrame = (frameId: number) => {
+    const frames = JSON.parse(localStorage.getItem('frames') || '[]');
+    const updated = frames.filter((f: any) => f.id !== frameId);
+    localStorage.setItem('frames', JSON.stringify(updated));
     toast({ title: 'Рамка удалена' });
   };
 
-  const handleUpdateFramePrice = async (frameId: number, price: number) => {
-    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_frame_price', frame_id: frameId, price })
-    });
-    fetchAllFrames();
+  const handleUpdateFramePrice = (frameId: number, price: number) => {
+    const frames = JSON.parse(localStorage.getItem('frames') || '[]');
+    const updated = frames.map((f: any) => f.id === frameId ? { ...f, price } : f);
+    localStorage.setItem('frames', JSON.stringify(updated));
     toast({ title: 'Цена обновлена' });
   };
 
@@ -351,6 +265,13 @@ const Index = () => {
     setUser(null);
     toast({ title: 'Выход выполнен' });
   };
+
+  const purchasedGames = user ? (JSON.parse(localStorage.getItem('purchasedGames') || '{}')[user.id] || []) : [];
+  const allGames = JSON.parse(localStorage.getItem('games') || '[]');
+  const pendingGames = allGames.filter((g: Game) => g.status === 'pending');
+  const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+  const allFrames = JSON.parse(localStorage.getItem('frames') || '[]');
+  const filteredUsers = allUsers.filter((u: User) => u.email.toLowerCase().includes(userSearchQuery.toLowerCase()));
 
   if (!user) {
     return (
@@ -411,14 +332,6 @@ const Index = () => {
             <div className="flex items-center gap-2">
               <Icon name="Wallet" size={20} className="text-muted-foreground" />
               <span className="font-semibold">{user.balance.toFixed(2)} ₽</span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 w-6 p-0"
-                onClick={() => window.open('https://t.me/HE_CMOTRI_CYDA_EBANAT', '_blank')}
-              >
-                <Icon name="Plus" size={16} />
-              </Button>
             </div>
             
             <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
@@ -440,7 +353,6 @@ const Index = () => {
                       value={publishForm.title}
                       onChange={(e) => setPublishForm({ ...publishForm, title: e.target.value })}
                       className="mt-1"
-                      required
                     />
                   </div>
                   
@@ -466,7 +378,6 @@ const Index = () => {
                       onChange={(e) => setPublishForm({ ...publishForm, description: e.target.value })}
                       className="mt-1"
                       rows={4}
-                      required
                     />
                   </div>
                   
@@ -493,7 +404,6 @@ const Index = () => {
                       onChange={(e) => setPublishForm({ ...publishForm, file_url: e.target.value })}
                       className="mt-1"
                       placeholder="https://example.com/game.apk"
-                      required
                     />
                   </div>
                   
@@ -504,7 +414,6 @@ const Index = () => {
                       onChange={(e) => setPublishForm({ ...publishForm, logo_url: e.target.value })}
                       className="mt-1"
                       placeholder="https://example.com/logo.png"
-                      required
                     />
                   </div>
                   
@@ -518,18 +427,6 @@ const Index = () => {
                       onChange={(e) => setPublishForm({ ...publishForm, price: parseFloat(e.target.value) || 0 })}
                       className="mt-1"
                       placeholder="0 - бесплатно"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Контактный email <span className="text-red-500">*</span></Label>
-                    <Input 
-                      type="email"
-                      value={publishForm.contact_email}
-                      onChange={(e) => setPublishForm({ ...publishForm, contact_email: e.target.value })}
-                      className="mt-1"
-                      placeholder="your@email.com"
-                      required
                     />
                   </div>
                   
@@ -591,7 +488,7 @@ const Index = () => {
                       <Badge variant="secondary" className="capitalize">{game.category}</Badge>
                       <Badge variant="outline">{game.age_rating}</Badge>
                     </div>
-                    {purchasedGames.has(game.id) ? (
+                    {purchasedGames.some((g: any) => g.id === game.id) ? (
                       <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
                         <a href={game.file_url} target="_blank">
                           <Icon name="Download" size={18} className="mr-2" />
@@ -608,7 +505,7 @@ const Index = () => {
                     ) : (
                       <Button 
                         className="w-full bg-yellow-600 hover:bg-yellow-700"
-                        onClick={() => purchaseGame(game.id, game.price)}
+                        onClick={() => purchaseGame(game)}
                       >
                         <Icon name="ShoppingCart" size={18} className="mr-2" />
                         Купить за {game.price} ₽
@@ -690,7 +587,7 @@ const Index = () => {
                       <Badge variant="outline">{game.age_rating}</Badge>
                       {game.is_popular && <Badge className="bg-yellow-600">Популярная</Badge>}
                     </div>
-                    {purchasedGames.has(game.id) ? (
+                    {purchasedGames.some((g: any) => g.id === game.id) ? (
                       <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
                         <a href={game.file_url} target="_blank">
                           <Icon name="Download" size={18} className="mr-2" />
@@ -707,7 +604,7 @@ const Index = () => {
                     ) : (
                       <Button 
                         className="w-full bg-primary hover:bg-primary/90"
-                        onClick={() => purchaseGame(game.id, game.price)}
+                        onClick={() => purchaseGame(game)}
                       >
                         <Icon name="ShoppingCart" size={18} className="mr-2" />
                         Купить за {game.price} ₽
@@ -733,7 +630,7 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="moderation" className="space-y-4">
-                {pendingGames.map((game) => (
+                {pendingGames.map((game: Game) => (
                   <Card key={game.id} className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                       <div className="flex-1 w-full">
@@ -766,7 +663,7 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="all-games" className="space-y-4">
-                {allGames.map((game) => (
+                {allGames.map((game: Game) => (
                   <Card key={game.id} className="p-6">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
@@ -830,22 +727,19 @@ const Index = () => {
               <TabsContent value="users" className="space-y-4">
                 <div className="mb-6">
                   <Input
-                    placeholder="Поиск по имени пользователя..."
+                    placeholder="Поиск по email..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
                     className="max-w-md"
                   />
                 </div>
-                {filteredUsers.map((u) => (
+                {filteredUsers.map((u: User) => (
                   <Card key={u.id} className="p-6">
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold">{u.email}</h3>
                           <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge>
-                          {u.is_banned && <Badge variant="destructive">Заблокирован</Badge>}
-                          {u.is_verified && <Badge variant="outline" className="border-blue-500 text-blue-500">Верифицирован</Badge>}
-                          {u.has_checkmark && <Icon name="BadgeCheck" size={20} className="text-green-500" />}
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
@@ -858,29 +752,6 @@ const Index = () => {
                             />
                           </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => handleUserAction(u.id, 'toggle_verified')}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {u.is_verified ? 'Снять верификацию' : 'Верифицировать'}
-                        </Button>
-                        <Button 
-                          onClick={() => handleUserAction(u.id, 'toggle_checkmark')}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {u.has_checkmark ? 'Убрать галочку' : 'Дать галочку'}
-                        </Button>
-                        <Button 
-                          onClick={() => handleUserAction(u.id, u.is_banned ? 'unban' : 'ban')}
-                          variant={u.is_banned ? 'outline' : 'destructive'}
-                          size="sm"
-                        >
-                          {u.is_banned ? 'Разбанить' : 'Забанить'}
-                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -915,7 +786,7 @@ const Index = () => {
                 </Card>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {allFrames.map((frame) => (
+                  {allFrames.map((frame: any) => (
                     <Card key={frame.id} className="p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <div 
