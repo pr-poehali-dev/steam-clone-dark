@@ -36,9 +36,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if action == 'friends':
                 cur.execute(
-                    """SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_verified, u.has_checkmark 
-                    FROM friendships f 
-                    JOIN users u ON f.friend_id = u.id 
+                    """SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_verified, u.has_checkmark, u.active_frame_id, fr.image_url as frame_url
+                    FROM t_p84121358_steam_clone_dark.friendships f 
+                    JOIN t_p84121358_steam_clone_dark.users u ON f.friend_id = u.id 
+                    LEFT JOIN t_p84121358_steam_clone_dark.frames fr ON u.active_frame_id = fr.id
                     WHERE f.user_id = %s""",
                     (user_id,)
                 )
@@ -54,17 +55,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'display_name': f[2],
                         'avatar_url': f[3],
                         'is_verified': f[4],
-                        'has_checkmark': f[5]
+                        'has_checkmark': f[5],
+                        'active_frame_id': f[6],
+                        'frame_url': f[7]
                     } for f in friends])
                 }
             
             elif action == 'search':
                 search = params.get('search', '')
                 cur.execute(
-                    """SELECT id, username, display_name, avatar_url, is_verified, has_checkmark 
-                    FROM users 
-                    WHERE (username ILIKE %s OR display_name ILIKE %s) AND id != %s
-                    ORDER BY has_checkmark DESC, is_verified DESC, username ASC""",
+                    """SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_verified, u.has_checkmark, u.active_frame_id, f.image_url as frame_url
+                    FROM t_p84121358_steam_clone_dark.users u
+                    LEFT JOIN t_p84121358_steam_clone_dark.frames f ON u.active_frame_id = f.id
+                    WHERE (u.username ILIKE %s OR u.display_name ILIKE %s) AND u.id != %s
+                    ORDER BY u.has_checkmark DESC, u.is_verified DESC, u.username ASC""",
                     (f'%{search}%', f'%{search}%', user_id)
                 )
                 users = cur.fetchall()
@@ -79,7 +83,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'display_name': u[2],
                         'avatar_url': u[3],
                         'is_verified': u[4],
-                        'has_checkmark': u[5]
+                        'has_checkmark': u[5],
+                        'active_frame_id': u[6],
+                        'frame_url': u[7]
                     } for u in users])
                 }
             
@@ -87,7 +93,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 friend_id = params.get('friend_id')
                 cur.execute(
                     """SELECT id, sender_id, receiver_id, message, created_at 
-                    FROM messages 
+                    FROM t_p84121358_steam_clone_dark.messages 
                     WHERE (sender_id = %s AND receiver_id = %s) OR (sender_id = %s AND receiver_id = %s)
                     ORDER BY created_at ASC""",
                     (user_id, friend_id, friend_id, user_id)
@@ -116,11 +122,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 friend_id = body_data.get('friend_id')
                 
                 cur.execute(
-                    "INSERT INTO friendships (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    "INSERT INTO t_p84121358_steam_clone_dark.friendships (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (user_id, friend_id)
                 )
                 cur.execute(
-                    "INSERT INTO friendships (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    "INSERT INTO t_p84121358_steam_clone_dark.friendships (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (friend_id, user_id)
                 )
                 conn.commit()
@@ -138,7 +144,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 message = body_data.get('message')
                 
                 cur.execute(
-                    "INSERT INTO messages (sender_id, receiver_id, message) VALUES (%s, %s, %s) RETURNING id",
+                    "INSERT INTO t_p84121358_steam_clone_dark.messages (sender_id, receiver_id, message) VALUES (%s, %s, %s) RETURNING id",
                     (sender_id, receiver_id, message)
                 )
                 msg_id = cur.fetchone()[0]

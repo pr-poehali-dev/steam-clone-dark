@@ -35,15 +35,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if status == 'all':
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games ORDER BY created_at DESC"
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM t_p84121358_steam_clone_dark.games ORDER BY created_at DESC"
                 )
             elif status == 'popular':
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = 'approved' AND is_popular = true ORDER BY created_at DESC"
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM t_p84121358_steam_clone_dark.games WHERE status = 'approved' AND is_popular = true ORDER BY created_at DESC"
                 )
             else:
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = %s ORDER BY created_at DESC",
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM t_p84121358_steam_clone_dark.games WHERE status = %s ORDER BY created_at DESC",
                     (status,)
                 )
             games = cur.fetchall()
@@ -72,7 +72,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             
             cur.execute(
-                "INSERT INTO games (title, description, category, age_rating, file_url, logo_url, publisher_login, status, price, contact_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "INSERT INTO t_p84121358_steam_clone_dark.games (title, description, category, age_rating, file_url, logo_url, publisher_login, status, price, contact_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                 (
                     body_data.get('title'),
                     body_data.get('description'),
@@ -102,7 +102,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             status = body_data.get('status')
             
             cur.execute(
-                "UPDATE games SET status = %s WHERE id = %s",
+                "UPDATE t_p84121358_steam_clone_dark.games SET status = %s WHERE id = %s",
                 (status, game_id)
             )
             conn.commit()
@@ -119,7 +119,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             game_id = params.get('id')
             
             cur.execute(
-                "DELETE FROM games WHERE id = %s",
+                "DELETE FROM t_p84121358_steam_clone_dark.games WHERE id = %s",
                 (game_id,)
             )
             conn.commit()

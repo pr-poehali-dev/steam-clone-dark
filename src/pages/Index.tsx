@@ -176,6 +176,11 @@ const Index = () => {
   };
 
   const handlePublishGame = async () => {
+    if (!publishForm.title || !publishForm.description || !publishForm.category || !publishForm.age_rating || !publishForm.file_url || !publishForm.logo_url || !publishForm.contact_email) {
+      toast({ title: 'Заполните все обязательные поля', variant: 'destructive' });
+      return;
+    }
+    
     await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -405,16 +410,17 @@ const Index = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label>Название игры</Label>
+                    <Label>Название игры <span className="text-red-500">*</span></Label>
                     <Input 
                       value={publishForm.title}
                       onChange={(e) => setPublishForm({ ...publishForm, title: e.target.value })}
                       className="mt-1"
+                      required
                     />
                   </div>
                   
                   <div>
-                    <Label>Тематика</Label>
+                    <Label>Тематика <span className="text-red-500">*</span></Label>
                     <Select value={publishForm.category} onValueChange={(v) => setPublishForm({ ...publishForm, category: v })}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Выберите тематику" />
@@ -429,17 +435,18 @@ const Index = () => {
                   </div>
                   
                   <div>
-                    <Label>Описание</Label>
+                    <Label>Описание <span className="text-red-500">*</span></Label>
                     <Textarea 
                       value={publishForm.description}
                       onChange={(e) => setPublishForm({ ...publishForm, description: e.target.value })}
                       className="mt-1"
                       rows={4}
+                      required
                     />
                   </div>
                   
                   <div>
-                    <Label>Возрастное ограничение</Label>
+                    <Label>Возрастное ограничение <span className="text-red-500">*</span></Label>
                     <Select value={publishForm.age_rating} onValueChange={(v) => setPublishForm({ ...publishForm, age_rating: v })}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Выберите возраст" />
@@ -455,22 +462,24 @@ const Index = () => {
                   </div>
                   
                   <div>
-                    <Label>Ссылка на файл APK</Label>
+                    <Label>Ссылка на файл APK <span className="text-red-500">*</span></Label>
                     <Input 
                       value={publishForm.file_url}
                       onChange={(e) => setPublishForm({ ...publishForm, file_url: e.target.value })}
                       className="mt-1"
                       placeholder="https://example.com/game.apk"
+                      required
                     />
                   </div>
                   
                   <div>
-                    <Label>Ссылка на логотип</Label>
+                    <Label>Ссылка на логотип <span className="text-red-500">*</span></Label>
                     <Input 
                       value={publishForm.logo_url}
                       onChange={(e) => setPublishForm({ ...publishForm, logo_url: e.target.value })}
                       className="mt-1"
                       placeholder="https://example.com/logo.png"
+                      required
                     />
                   </div>
                   
@@ -484,6 +493,18 @@ const Index = () => {
                       onChange={(e) => setPublishForm({ ...publishForm, price: parseFloat(e.target.value) || 0 })}
                       className="mt-1"
                       placeholder="0 - бесплатно"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Контактный email <span className="text-red-500">*</span></Label>
+                    <Input 
+                      type="email"
+                      value={publishForm.contact_email}
+                      onChange={(e) => setPublishForm({ ...publishForm, contact_email: e.target.value })}
+                      className="mt-1"
+                      placeholder="your@email.com"
+                      required
                     />
                   </div>
                   

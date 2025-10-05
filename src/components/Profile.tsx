@@ -27,6 +27,8 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
   const [newMessage, setNewMessage] = useState('');
   const [allFrames, setAllFrames] = useState<any[]>([]);
   const [userFrames, setUserFrames] = useState<any[]>([]);
+  const [marketListings, setMarketListings] = useState<any[]>([]);
+  const [sellPrice, setSellPrice] = useState<{[key: string]: number}>({});
   const { toast } = useToast();
 
   const [editForm, setEditForm] = useState({
@@ -40,6 +42,7 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
     fetchFriends();
     fetchFrames();
     fetchUserFrames();
+    fetchMarketListings();
     searchUsers('');
   }, []);
 
@@ -89,6 +92,51 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
       body: JSON.stringify({ action: 'set_active_frame', user_id: user.id, frame_id: frameId })
     });
     toast({ title: 'Рамка установлена' });
+  };
+
+  const fetchMarketListings = async () => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?action=market_listings');
+    const data = await res.json();
+    setMarketListings(data.listings || []);
+  };
+
+  const listOnMarket = async (itemType: string, itemId: number, price: number) => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list_on_market', user_id: user.id, item_type: itemType, item_id: itemId, price })
+    });
+    fetchProfile();
+    fetchMarketListings();
+    toast({ title: 'Выставлено на продажу' });
+  };
+
+  const removeFromMarket = async (itemType: string, itemId: number) => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remove_from_market', user_id: user.id, item_type: itemType, item_id: itemId })
+    });
+    fetchProfile();
+    fetchMarketListings();
+    toast({ title: 'Снято с продажи' });
+  };
+
+  const buyFromMarket = async (listing: any) => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'buy_from_market', buyer_id: user.id, listing_id: listing.id, item_type: listing.item_type })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      fetchProfile();
+      fetchMarketListings();
+      toast({ title: 'Покупка завершена!' });
+    } else {
+      toast({ title: data.error, variant: 'destructive' });
+    }
   };
 
   const fetchProfile = async () => {
@@ -173,12 +221,21 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
 
           <TabsContent value="profile" className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                {editForm.avatar_url ? (
-                  <img src={editForm.avatar_url} className="w-full h-full object-cover" />
-                ) : (
-                  <Icon name="User" size={40} className="text-primary" />
+              <div className="relative w-20 h-20">
+                {profile?.active_frame_id && userFrames.find(f => f.id === profile.active_frame_id) && (
+                  <img 
+                    src={userFrames.find(f => f.id === profile.active_frame_id)?.image_url} 
+                    alt="Frame" 
+                    className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none"
+                  />
                 )}
+                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                  {editForm.avatar_url ? (
+                    <img src={editForm.avatar_url} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="User" size={40} className="text-primary" />
+                  )}
+                </div>
               </div>
               <div className="flex-1">
                 {!editMode ? (
@@ -228,8 +285,13 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                 {friends.map((friend) => (
                   <Card key={friend.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                        {friend.avatar_url ? <img src={friend.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
+                      <div className="relative w-10 h-10">
+                        {friend.frame_url && (
+                          <img src={friend.frame_url} alt="Frame" className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none" />
+                        )}
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                          {friend.avatar_url ? <img src={friend.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
+                        </div>
                       </div>
                       <div>
                         <p className="font-semibold flex items-center gap-1">
@@ -251,8 +313,13 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
                 {searchResults.map((user) => (
                   <Card key={user.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                        {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
+                      <div className="relative w-10 h-10">
+                        {user.frame_url && (
+                          <img src={user.frame_url} alt="Frame" className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none" />
+                        )}
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                          {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" /> : <Icon name="User" size={20} />}
+                        </div>
                       </div>
                       <div>
                         <p className="font-semibold flex items-center gap-1">
@@ -297,10 +364,139 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
           </TabsContent>
 
           <TabsContent value="market" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Торговая площадка - купля/продажа игр между пользователями</p>
-            <Card className="p-4 bg-muted/50">
-              <p className="text-center text-muted-foreground">Функционал в разработке</p>
-            </Card>
+            <p className="text-sm text-muted-foreground">Торговая площадка - купля/продажа игр и рамок между пользователями</p>
+            
+            <Tabs defaultValue="buy" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="buy">Купить</TabsTrigger>
+                <TabsTrigger value="sell">Продать</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="buy" className="space-y-4 mt-4">
+                {marketListings.length === 0 ? (
+                  <Card className="p-4 bg-muted/50">
+                    <p className="text-center text-muted-foreground">Нет товаров на продажу</p>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {marketListings.map((listing) => (
+                      <Card key={`${listing.item_type}-${listing.id}`} className="p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            {listing.item_image && (
+                              <img src={listing.item_image} alt={listing.item_name} className="w-16 h-16 object-cover rounded" />
+                            )}
+                            <div>
+                              <h4 className="font-semibold">{listing.item_name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {listing.item_type === 'game' ? 'Игра' : 'Рамка'} от {listing.seller_email}
+                              </p>
+                              <p className="text-lg font-bold text-primary mt-1">{listing.market_price} ₽</p>
+                            </div>
+                          </div>
+                          {listing.user_id !== user.id && (
+                            <Button onClick={() => buyFromMarket(listing)}>
+                              <Icon name="ShoppingCart" size={18} className="mr-2" />
+                              Купить
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="sell" className="space-y-4 mt-4">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-3">Мои игры</h4>
+                    {profile?.purchases && profile.purchases.length > 0 ? (
+                      <div className="grid gap-3">
+                        {profile.purchases.map((game: any) => (
+                          <Card key={game.purchase_id} className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                {game.logo_url && (
+                                  <img src={game.logo_url} alt={game.title} className="w-12 h-12 object-cover rounded" />
+                                )}
+                                <div>
+                                  <h5 className="font-medium">{game.title}</h5>
+                                  <p className="text-sm text-muted-foreground">Куплена за {game.price} ₽</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number"
+                                  placeholder="Цена"
+                                  className="w-24"
+                                  value={sellPrice[`game-${game.purchase_id}`] || ''}
+                                  onChange={(e) => setSellPrice({...sellPrice, [`game-${game.purchase_id}`]: parseInt(e.target.value) || 0})}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => listOnMarket('game', game.purchase_id, sellPrice[`game-${game.purchase_id}`] || 0)}
+                                  disabled={!sellPrice[`game-${game.purchase_id}`]}
+                                >
+                                  Продать
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="p-4 bg-muted/50">
+                        <p className="text-center text-muted-foreground">Нет игр для продажи</p>
+                      </Card>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-3">Мои рамки</h4>
+                    {profile?.frames && profile.frames.length > 0 ? (
+                      <div className="grid gap-3">
+                        {profile.frames.map((frame: any) => (
+                          <Card key={frame.user_frame_id} className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                {frame.image_url && (
+                                  <img src={frame.image_url} alt={frame.name} className="w-12 h-12 object-cover rounded" />
+                                )}
+                                <div>
+                                  <h5 className="font-medium">{frame.name}</h5>
+                                  <p className="text-sm text-muted-foreground">Куплена за {frame.price} ₽</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number"
+                                  placeholder="Цена"
+                                  className="w-24"
+                                  value={sellPrice[`frame-${frame.user_frame_id}`] || ''}
+                                  onChange={(e) => setSellPrice({...sellPrice, [`frame-${frame.user_frame_id}`]: parseInt(e.target.value) || 0})}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => listOnMarket('frame', frame.user_frame_id, sellPrice[`frame-${frame.user_frame_id}`] || 0)}
+                                  disabled={!sellPrice[`frame-${frame.user_frame_id}`]}
+                                >
+                                  Продать
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="p-4 bg-muted/50">
+                        <p className="text-center text-muted-foreground">Нет рамок для продажи</p>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="frames-shop" className="grid grid-cols-2 gap-4">
