@@ -17,7 +17,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
@@ -33,10 +33,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {})
             status = params.get('status', 'approved')
             
-            cur.execute(
-                "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at FROM games WHERE status = %s ORDER BY created_at DESC",
-                (status,)
-            )
+            if status == 'all':
+                cur.execute(
+                    "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at FROM games ORDER BY created_at DESC"
+                )
+            else:
+                cur.execute(
+                    "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at FROM games WHERE status = %s ORDER BY created_at DESC",
+                    (status,)
+                )
             games = cur.fetchall()
             
             return {
@@ -89,6 +94,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "UPDATE games SET status = %s WHERE id = %s",
                 (status, game_id)
+            )
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'success': True})
+            }
+        
+        elif method == 'DELETE':
+            params = event.get('queryStringParameters', {})
+            game_id = params.get('id')
+            
+            cur.execute(
+                "DELETE FROM games WHERE id = %s",
+                (game_id,)
             )
             conn.commit()
             

@@ -34,6 +34,7 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
+  const [allGames, setAllGames] = useState<Game[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
@@ -67,6 +68,7 @@ const Index = () => {
     if (user?.role === 'admin') {
       fetchPendingGames();
       fetchUsers();
+      fetchAllGames();
     }
   }, [user]);
 
@@ -80,6 +82,12 @@ const Index = () => {
     const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=pending');
     const data = await response.json();
     setPendingGames(data);
+  };
+
+  const fetchAllGames = async () => {
+    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=all');
+    const data = await response.json();
+    setAllGames(data);
   };
 
   const fetchUsers = async () => {
@@ -130,7 +138,19 @@ const Index = () => {
     
     fetchPendingGames();
     fetchGames();
+    fetchAllGames();
     toast({ title: status === 'approved' ? 'Игра одобрена' : 'Игра отклонена' });
+  };
+
+  const handleDeleteGame = async (gameId: number) => {
+    await fetch(`https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?id=${gameId}`, {
+      method: 'DELETE'
+    });
+    
+    fetchAllGames();
+    fetchGames();
+    fetchPendingGames();
+    toast({ title: 'Игра удалена' });
   };
 
   const handleUserAction = async (userId: number, action: string, value?: any) => {
@@ -379,6 +399,7 @@ const Index = () => {
             <Tabs defaultValue="moderation" className="space-y-6">
               <TabsList>
                 <TabsTrigger value="moderation">Модерация игр</TabsTrigger>
+                <TabsTrigger value="all-games">Все игры</TabsTrigger>
                 <TabsTrigger value="users">Пользователи</TabsTrigger>
               </TabsList>
               
@@ -412,6 +433,46 @@ const Index = () => {
                 ))}
                 {pendingGames.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">Нет заявок на модерацию</p>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="all-games" className="space-y-4">
+                {allGames.map((game) => (
+                  <Card key={game.id} className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2">{game.title}</h3>
+                        <p className="text-muted-foreground mb-3">{game.description}</p>
+                        <div className="flex gap-2 mb-3">
+                          <Badge>{game.category}</Badge>
+                          <Badge variant="outline">{game.age_rating}</Badge>
+                          <Badge variant={
+                            game.status === 'approved' ? 'default' :
+                            game.status === 'pending' ? 'secondary' : 'destructive'
+                          }>
+                            {game.status === 'approved' ? 'Одобрена' :
+                             game.status === 'pending' ? 'На модерации' : 'Отклонена'}
+                          </Badge>
+                          <Badge variant="secondary">От: {game.publisher_login}</Badge>
+                        </div>
+                        <a href={game.file_url} target="_blank" className="text-primary hover:underline text-sm flex items-center gap-1">
+                          <Icon name="Download" size={16} />
+                          Скачать файл
+                        </a>
+                      </div>
+                      <Button 
+                        onClick={() => handleDeleteGame(game.id)} 
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <Icon name="Trash2" size={18} className="mr-2" />
+                        Удалить
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                {allGames.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">Нет игр в системе</p>
                 )}
               </TabsContent>
               
