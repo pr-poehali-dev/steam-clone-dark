@@ -100,6 +100,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False,
                     'body': json.dumps({'success': True})
                 }
+            
+            elif action == 'update_game_price':
+                game_id = body_data.get('game_id')
+                price = body_data.get('price')
+                cur.execute(
+                    "UPDATE games SET price = %s WHERE id = %s",
+                    (price, game_id)
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'toggle_popular':
+                game_id = body_data.get('game_id')
+                is_popular = body_data.get('is_popular')
+                cur.execute(
+                    "UPDATE games SET is_popular = %s WHERE id = %s",
+                    (is_popular, game_id)
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
         
         return {
             'statusCode': 405,

@@ -28,11 +28,14 @@ interface Game {
   file_url: string;
   publisher_login: string;
   status: string;
+  price: number;
+  is_popular: boolean;
 }
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<Game[]>([]);
+  const [popularGames, setPopularGames] = useState<Game[]>([]);
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -48,7 +51,8 @@ const Index = () => {
     description: '',
     category: '',
     age_rating: '',
-    file_url: ''
+    file_url: '',
+    price: 0
   });
 
   const categories = ['all', 'action', 'adventure', 'puzzle', 'strategy'];
@@ -71,6 +75,7 @@ const Index = () => {
       }
     }
     fetchGames();
+    fetchPopularGames();
   }, []);
 
   useEffect(() => {
@@ -85,6 +90,12 @@ const Index = () => {
     const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=approved');
     const data = await response.json();
     setGames(data);
+  };
+
+  const fetchPopularGames = async () => {
+    const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=popular');
+    const data = await response.json();
+    setPopularGames(data);
   };
 
   const fetchPendingGames = async () => {
@@ -135,7 +146,7 @@ const Index = () => {
     });
     
     setShowPublishDialog(false);
-    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '' });
+    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', price: 0 });
     toast({ title: 'Заявка отправлена на модерацию' });
   };
 
@@ -161,6 +172,31 @@ const Index = () => {
     fetchGames();
     fetchPendingGames();
     toast({ title: 'Игра удалена' });
+  };
+
+  const handleUpdateGamePrice = async (gameId: number, price: number) => {
+    await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_game_price', game_id: gameId, price })
+    });
+    
+    fetchAllGames();
+    fetchGames();
+    toast({ title: 'Цена обновлена' });
+  };
+
+  const handleTogglePopular = async (gameId: number, isPopular: boolean) => {
+    await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'toggle_popular', game_id: gameId, is_popular: isPopular })
+    });
+    
+    fetchAllGames();
+    fetchGames();
+    fetchPopularGames();
+    toast({ title: isPopular ? 'Добавлено в популярные' : 'Убрано из популярных' });
   };
 
   const handleUserAction = async (userId: number, action: string, value?: any) => {
@@ -317,6 +353,19 @@ const Index = () => {
                     />
                   </div>
                   
+                  <div>
+                    <Label>Цена (₽)</Label>
+                    <Input 
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={publishForm.price}
+                      onChange={(e) => setPublishForm({ ...publishForm, price: parseFloat(e.target.value) || 0 })}
+                      className="mt-1"
+                      placeholder="0 - бесплатно"
+                    />
+                  </div>
+                  
                   <Button onClick={handlePublishGame} className="w-full bg-primary">
                     Опубликовать игру
                   </Button>
@@ -341,6 +390,46 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {popularGames.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+              <Icon name="TrendingUp" size={32} className="text-yellow-500" />
+              Популярные игры
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {popularGames.map((game) => (
+                <Card key={game.id} className="overflow-hidden hover:border-yellow-500 transition-all hover:shadow-lg hover:shadow-yellow-500/20 group animate-fade-in border-yellow-500/30">
+                  <div className="aspect-video bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                    <Icon name="Star" size={64} className="text-yellow-500/60 group-hover:text-yellow-500 transition-all group-hover:scale-110 relative z-10" />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-lg line-clamp-1 flex-1">{game.title}</h3>
+                      {game.price === 0 ? (
+                        <Badge className="bg-green-600 hover:bg-green-700 ml-2">FREE</Badge>
+                      ) : (
+                        <Badge variant="default" className="ml-2">{game.price} ₽</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{game.description}</p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="secondary" className="capitalize">{game.category}</Badge>
+                      <Badge variant="outline">{game.age_rating}</Badge>
+                    </div>
+                    <Button className="w-full bg-yellow-600 hover:bg-yellow-700 group" asChild>
+                      <a href={game.file_url} target="_blank">
+                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                        {game.price === 0 ? 'Скачать' : `Купить за ${game.price} ₽`}
+                      </a>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mb-12">
           <div className="mb-8">
             <h2 className="text-3xl font-bold mb-6">Каталог игр для Android</h2>
@@ -390,16 +479,24 @@ const Index = () => {
                     <Icon name="Gamepad2" size={64} className="text-primary/60 group-hover:text-primary transition-all group-hover:scale-110 relative z-10" />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-lg mb-2 line-clamp-1">{game.title}</h3>
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-lg line-clamp-1 flex-1">{game.title}</h3>
+                      {game.price === 0 ? (
+                        <Badge className="bg-green-600 hover:bg-green-700 ml-2">FREE</Badge>
+                      ) : (
+                        <Badge variant="default" className="ml-2">{game.price} ₽</Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{game.description}</p>
                     <div className="flex items-center gap-2 mb-3">
                       <Badge variant="secondary" className="capitalize">{game.category}</Badge>
                       <Badge variant="outline">{game.age_rating}</Badge>
+                      {game.is_popular && <Badge className="bg-yellow-600">Популярная</Badge>}
                     </div>
                     <Button className="w-full bg-primary hover:bg-primary/90 group" asChild>
                       <a href={game.file_url} target="_blank">
                         <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
-                        Скачать APK
+                        {game.price === 0 ? 'Скачать' : `Купить за ${game.price} ₽`}
                       </a>
                     </Button>
                   </div>
@@ -456,11 +553,11 @@ const Index = () => {
               <TabsContent value="all-games" className="space-y-4">
                 {allGames.map((game) => (
                   <Card key={game.id} className="p-6">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
                         <h3 className="text-xl font-bold mb-2">{game.title}</h3>
                         <p className="text-muted-foreground mb-3">{game.description}</p>
-                        <div className="flex gap-2 mb-3">
+                        <div className="flex gap-2 mb-3 flex-wrap">
                           <Badge>{game.category}</Badge>
                           <Badge variant="outline">{game.age_rating}</Badge>
                           <Badge variant={
@@ -471,6 +568,28 @@ const Index = () => {
                              game.status === 'pending' ? 'На модерации' : 'Отклонена'}
                           </Badge>
                           <Badge variant="secondary">От: {game.publisher_login}</Badge>
+                          {game.is_popular && <Badge className="bg-yellow-600">Популярная</Badge>}
+                        </div>
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="flex items-center gap-2">
+                            <Icon name="DollarSign" size={16} className="text-muted-foreground" />
+                            <Input 
+                              type="number" 
+                              min="0"
+                              step="0.01"
+                              defaultValue={game.price}
+                              onBlur={(e) => handleUpdateGamePrice(game.id, parseFloat(e.target.value) || 0)}
+                              className="w-24"
+                            />
+                          </div>
+                          <Button
+                            onClick={() => handleTogglePopular(game.id, !game.is_popular)}
+                            variant={game.is_popular ? 'default' : 'outline'}
+                            size="sm"
+                          >
+                            <Icon name="Star" size={16} className="mr-1" />
+                            {game.is_popular ? 'Популярная' : 'В популярные'}
+                          </Button>
                         </div>
                         <a href={game.file_url} target="_blank" className="text-primary hover:underline text-sm flex items-center gap-1">
                           <Icon name="Download" size={16} />
