@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Get all users",
+      "method": "GET",
+      "path": "/?action=users",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Update user balance",
+      "method": "PUT",
+      "path": "/",
+      "body": {
+        "action": "update_balance",
+        "user_id": 1,
+        "balance": 500
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

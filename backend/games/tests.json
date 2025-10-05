@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get approved games",
+      "method": "GET",
+      "path": "/?status=approved",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Submit new game",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "title": "Test Game",
+        "description": "Test description",
+        "category": "Action",
+        "age_rating": "12+",
+        "file_url": "http://example.com/game.apk",
+        "publisher_login": "testuser"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "status": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
