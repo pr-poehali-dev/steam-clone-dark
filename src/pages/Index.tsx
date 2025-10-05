@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+import Profile from '@/components/Profile';
 
 interface User {
   id: number;
@@ -41,6 +42,8 @@ const Index = () => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -52,7 +55,8 @@ const Index = () => {
     category: '',
     age_rating: '',
     file_url: '',
-    price: 0
+    price: 0,
+    contact_email: ''
   });
 
   const categories = ['all', 'action', 'adventure', 'puzzle', 'strategy'];
@@ -146,8 +150,28 @@ const Index = () => {
     });
     
     setShowPublishDialog(false);
-    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', price: 0 });
-    toast({ title: 'Заявка отправлена на модерацию' });
+    setPublishSuccess(true);
+    setTimeout(() => setPublishSuccess(false), 5000);
+    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', price: 0, contact_email: '' });
+  };
+
+  const purchaseGame = async (gameId: number, price: number) => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'purchase', user_id: user?.id, game_id: gameId })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      const updated = { ...user!, balance: data.new_balance };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+      toast({ title: 'Игра куплена!' });
+      fetchGames();
+    } else {
+      toast({ title: 'Недостаточно средств', variant: 'destructive' });
+    }
   };
 
   const handleGameAction = async (gameId: number, status: string) => {

@@ -24,6 +24,8 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [allFrames, setAllFrames] = useState<any[]>([]);
+  const [userFrames, setUserFrames] = useState<any[]>([]);
   const { toast } = useToast();
 
   const [editForm, setEditForm] = useState({
@@ -35,7 +37,57 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
   useEffect(() => {
     fetchProfile();
     fetchFriends();
+    fetchFrames();
+    fetchUserFrames();
   }, []);
+
+  const fetchFrames = async () => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_frames' })
+    });
+    const data = await res.json();
+    setAllFrames(data);
+  };
+
+  const fetchUserFrames = async () => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_user_frames', user_id: user.id })
+    });
+    const data = await res.json();
+    setUserFrames(data);
+  };
+
+  const purchaseFrame = async (frameId: number, price: number) => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'purchase_frame', user_id: user.id, frame_id: frameId })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      const updated = { ...user, balance: data.new_balance };
+      localStorage.setItem('user', JSON.stringify(updated));
+      onUpdate(updated);
+      fetchUserFrames();
+      toast({ title: 'Рамка куплена!' });
+    } else {
+      toast({ title: data.error, variant: 'destructive' });
+    }
+  };
+
+  const setActiveFrame = async (frameId: number) => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set_active_frame', user_id: user.id, frame_id: frameId })
+    });
+    toast({ title: 'Рамка установлена' });
+  };
 
   const fetchProfile = async () => {
     const res = await fetch(`https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?user_id=${user.id}`);
@@ -111,10 +163,12 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
         </DialogHeader>
 
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">Профиль</TabsTrigger>
             <TabsTrigger value="friends">Друзья</TabsTrigger>
             <TabsTrigger value="library">Библиотека</TabsTrigger>
+            <TabsTrigger value="frames-shop">Рамки</TabsTrigger>
+            <TabsTrigger value="my-frames">Мои рамки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -232,6 +286,48 @@ export default function Profile({ user, onUpdate, onClose }: ProfileProps) {
             ))}
             {(!profile?.purchases || profile.purchases.length === 0) && (
               <p className="text-center text-muted-foreground py-8">Нет купленных игр</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="frames-shop" className="grid grid-cols-2 gap-4">
+            {allFrames.map((frame) => (
+              <Card key={frame.id} className="p-4">
+                <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                  {frame.image_url ? (
+                    <img src={frame.image_url} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="Image" size={32} className="text-muted-foreground" />
+                  )}
+                </div>
+                <h3 className="font-bold mb-2">{frame.name}</h3>
+                <div className="flex items-center justify-between">
+                  <Badge>{frame.price === 0 ? 'Бесплатно' : `${frame.price} ₽`}</Badge>
+                  <Button size="sm" onClick={() => purchaseFrame(frame.id, frame.price)}>
+                    Купить
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="my-frames" className="grid grid-cols-2 gap-4">
+            {userFrames.map((frame) => (
+              <Card key={frame.id} className="p-4">
+                <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                  {frame.image_url ? (
+                    <img src={frame.image_url} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="Image" size={32} className="text-muted-foreground" />
+                  )}
+                </div>
+                <h3 className="font-bold mb-2">{frame.name}</h3>
+                <Button size="sm" className="w-full" onClick={() => setActiveFrame(frame.id)}>
+                  Установить
+                </Button>
+              </Card>
+            ))}
+            {userFrames.length === 0 && (
+              <p className="col-span-2 text-center text-muted-foreground py-8">Нет рамок</p>
             )}
           </TabsContent>
         </Tabs>

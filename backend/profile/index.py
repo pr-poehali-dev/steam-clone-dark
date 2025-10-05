@@ -92,7 +92,130 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             action = body_data.get('action')
             
-            if action == 'purchase':
+            if action == 'get_frames':
+                cur.execute("SELECT id, name, image_url, price FROM frames ORDER BY price ASC")
+                frames = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps([{
+                        'id': f[0],
+                        'name': f[1],
+                        'image_url': f[2],
+                        'price': float(f[3])
+                    } for f in frames])
+                }
+            
+            elif action == 'get_user_frames':
+                user_id = body_data.get('user_id')
+                cur.execute(
+                    "SELECT f.id, f.name, f.image_url, f.price FROM user_frames uf JOIN frames f ON uf.frame_id = f.id WHERE uf.user_id = %s",
+                    (user_id,)
+                )
+                frames = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps([{
+                        'id': f[0],
+                        'name': f[1],
+                        'image_url': f[2],
+                        'price': float(f[3])
+                    } for f in frames])
+                }
+            
+            elif action == 'purchase_frame':
+                user_id = body_data.get('user_id')
+                frame_id = body_data.get('frame_id')
+                
+                cur.execute("SELECT price FROM frames WHERE id = %s", (frame_id,))
+                frame = cur.fetchone()
+                price = float(frame[0])
+                
+                cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
+                user = cur.fetchone()
+                balance = float(user[0])
+                
+                if balance >= price:
+                    cur.execute(
+                        "INSERT INTO user_frames (user_id, frame_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                        (user_id, frame_id)
+                    )
+                    cur.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (price, user_id))
+                    conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'success': True, 'new_balance': balance - price})
+                    }
+                else:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'error': 'Недостаточно средств'})
+                    }
+            
+            elif action == 'set_active_frame':
+                user_id = body_data.get('user_id')
+                frame_id = body_data.get('frame_id')
+                cur.execute("UPDATE users SET active_frame_id = %s WHERE id = %s", (frame_id, user_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'create_frame':
+                cur.execute(
+                    "INSERT INTO frames (name, image_url, price) VALUES (%s, %s, %s) RETURNING id",
+                    (body_data.get('name'), body_data.get('image_url'), body_data.get('price', 0))
+                )
+                frame_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'id': frame_id})
+                }
+            
+            elif action == 'delete_frame':
+                frame_id = body_data.get('frame_id')
+                cur.execute("DELETE FROM frames WHERE id = %s", (frame_id,))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'update_frame_price':
+                frame_id = body_data.get('frame_id')
+                price = body_data.get('price')
+                cur.execute("UPDATE frames SET price = %s WHERE id = %s", (price, frame_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'purchase':
                 user_id = body_data.get('user_id')
                 game_id = body_data.get('game_id')
                 
