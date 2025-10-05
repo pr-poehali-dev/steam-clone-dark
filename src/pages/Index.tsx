@@ -37,6 +37,8 @@ const Index = () => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
@@ -46,6 +48,15 @@ const Index = () => {
     category: '',
     age_rating: '',
     file_url: ''
+  });
+
+  const categories = ['all', 'action', 'adventure', 'puzzle', 'strategy'];
+  
+  const filteredGames = games.filter(game => {
+    const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
+    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          game.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
 
   useEffect(() => {
@@ -294,30 +305,71 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-6">Популярные игры</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {games.map((game) => (
-              <Card key={game.id} className="overflow-hidden hover:border-primary transition-colors group">
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <Icon name="Gamepad2" size={64} className="text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-6">Каталог игр для Android</h2>
+            
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Icon name="Search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    placeholder="Поиск игр..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-lg mb-2">{game.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{game.description}</p>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{game.category}</Badge>
-                    <Badge variant="outline">{game.age_rating}</Badge>
-                  </div>
-                  <Button className="w-full mt-4 bg-primary hover:bg-primary/90" asChild>
-                    <a href={game.file_url} target="_blank">
-                      <Icon name="Download" size={18} className="mr-2" />
-                      Скачать
-                    </a>
+              </div>
+              
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {categories.map(cat => (
+                  <Button
+                    key={cat}
+                    variant={selectedCategory === cat ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(cat)}
+                    className="whitespace-nowrap"
+                  >
+                    {cat === 'all' ? 'Все' : 
+                     cat === 'action' ? 'Экшен' :
+                     cat === 'adventure' ? 'Приключения' :
+                     cat === 'puzzle' ? 'Головоломки' : 'Стратегии'}
                   </Button>
-                </div>
-              </Card>
-            ))}
+                ))}
+              </div>
+            </div>
           </div>
+
+          {filteredGames.length === 0 ? (
+            <div className="text-center py-12">
+              <Icon name="GamepadIcon" size={64} className="mx-auto mb-4 text-muted-foreground" />
+              <p className="text-xl text-muted-foreground">Игры не найдены</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredGames.map((game) => (
+                <Card key={game.id} className="overflow-hidden hover:border-primary transition-all hover:shadow-lg hover:shadow-primary/20 group animate-fade-in">
+                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                    <Icon name="Gamepad2" size={64} className="text-primary/60 group-hover:text-primary transition-all group-hover:scale-110 relative z-10" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-lg mb-2 line-clamp-1">{game.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{game.description}</p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="secondary" className="capitalize">{game.category}</Badge>
+                      <Badge variant="outline">{game.age_rating}</Badge>
+                    </div>
+                    <Button className="w-full bg-primary hover:bg-primary/90 group" asChild>
+                      <a href={game.file_url} target="_blank">
+                        <Icon name="Download" size={18} className="mr-2 group-hover:animate-bounce" />
+                        Скачать APK
+                      </a>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
         {user.role === 'admin' && (
