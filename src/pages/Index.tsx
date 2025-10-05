@@ -40,12 +40,15 @@ const Index = () => {
   const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allFrames, setAllFrames] = useState<any[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [frameForm, setFrameForm] = useState({ name: '', image_url: '', price: 0 });
   const { toast } = useToast();
 
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
@@ -68,6 +71,10 @@ const Index = () => {
     return matchesCategory && matchesSearch;
   });
 
+  const filteredUsers = allUsers.filter(u => 
+    u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -87,8 +94,19 @@ const Index = () => {
       fetchPendingGames();
       fetchUsers();
       fetchAllGames();
+      fetchAllFrames();
     }
   }, [user]);
+
+  const fetchAllFrames = async () => {
+    const res = await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_frames' })
+    });
+    const data = await res.json();
+    setAllFrames(data);
+  };
 
   const fetchGames = async () => {
     const response = await fetch('https://functions.poehali.dev/652e95bf-5fe0-44a4-9318-a30e4b811727?status=approved');
@@ -195,6 +213,7 @@ const Index = () => {
     fetchAllGames();
     fetchGames();
     fetchPendingGames();
+    fetchPopularGames();
     toast({ title: 'Игра удалена' });
   };
 
@@ -236,6 +255,37 @@ const Index = () => {
       setUser(null);
       toast({ title: 'Вы заблокированы', variant: 'destructive' });
     }
+  };
+
+  const handleCreateFrame = async () => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create_frame', ...frameForm })
+    });
+    fetchAllFrames();
+    setFrameForm({ name: '', image_url: '', price: 0 });
+    toast({ title: 'Рамка создана' });
+  };
+
+  const handleDeleteFrame = async (frameId: number) => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_frame', frame_id: frameId })
+    });
+    fetchAllFrames();
+    toast({ title: 'Рамка удалена' });
+  };
+
+  const handleUpdateFramePrice = async (frameId: number, price: number) => {
+    await fetch('https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_frame_price', frame_id: frameId, price })
+    });
+    fetchAllFrames();
+    toast({ title: 'Цена обновлена' });
   };
 
   const handleLogout = () => {
@@ -303,6 +353,14 @@ const Index = () => {
             <div className="flex items-center gap-2">
               <Icon name="Wallet" size={20} className="text-muted-foreground" />
               <span className="font-semibold">{user.balance.toFixed(2)} ₽</span>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-6 w-6 p-0"
+                onClick={() => window.open('https://t.me/HE_CMOTRI_CYDA_EBANAT', '_blank')}
+              >
+                <Icon name="Plus" size={16} />
+              </Button>
             </div>
             
             <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
@@ -539,6 +597,7 @@ const Index = () => {
                 <TabsTrigger value="moderation">Модерация игр</TabsTrigger>
                 <TabsTrigger value="all-games">Все игры</TabsTrigger>
                 <TabsTrigger value="users">Пользователи</TabsTrigger>
+                <TabsTrigger value="frames">Рамки</TabsTrigger>
               </TabsList>
               
               <TabsContent value="moderation" className="space-y-4">
@@ -637,7 +696,15 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="users" className="space-y-4">
-                {allUsers.map((u) => (
+                <div className="mb-6">
+                  <Input
+                    placeholder="Поиск по имени пользователя..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="max-w-md"
+                  />
+                </div>
+                {filteredUsers.map((u) => (
                   <Card key={u.id} className="p-6">
                     <div className="flex justify-between items-center">
                       <div>
@@ -667,6 +734,71 @@ const Index = () => {
                     </div>
                   </Card>
                 ))}
+              </TabsContent>
+
+              <TabsContent value="frames" className="space-y-4">
+                <Card className="p-6 bg-card/50">
+                  <h3 className="text-lg font-semibold mb-4">Создать новую рамку</h3>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Input
+                      placeholder="Название"
+                      value={frameForm.name}
+                      onChange={(e) => setFrameForm({ ...frameForm, name: e.target.value })}
+                    />
+                    <Input
+                      placeholder="URL изображения"
+                      value={frameForm.image_url}
+                      onChange={(e) => setFrameForm({ ...frameForm, image_url: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Цена"
+                      value={frameForm.price}
+                      onChange={(e) => setFrameForm({ ...frameForm, price: parseFloat(e.target.value) || 0 })}
+                    />
+                    <Button onClick={handleCreateFrame}>
+                      <Icon name="Plus" size={18} className="mr-2" />
+                      Добавить
+                    </Button>
+                  </div>
+                </Card>
+
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {allFrames.map((frame) => (
+                    <Card key={frame.id} className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div 
+                          className="w-16 h-16 rounded border-2 bg-center bg-cover"
+                          style={{ borderColor: frame.image_url || '#ccc', backgroundImage: frame.image_url ? `url(${frame.image_url})` : 'none' }}
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold">{frame.name}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Icon name="DollarSign" size={14} className="text-muted-foreground" />
+                            <Input 
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              defaultValue={frame.price}
+                              onBlur={(e) => handleUpdateFramePrice(frame.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 h-7 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleDeleteFrame(frame.id)}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <Icon name="Trash2" size={16} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+                {allFrames.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">Рамок пока нет</p>
+                )}
               </TabsContent>
             </Tabs>
           </section>
