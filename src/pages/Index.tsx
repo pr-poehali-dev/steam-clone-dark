@@ -61,6 +61,15 @@ const Index = () => {
   });
 
   useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+      } catch (e) {
+        localStorage.removeItem('user');
+      }
+    }
     fetchGames();
   }, []);
 
@@ -110,6 +119,7 @@ const Index = () => {
         toast({ title: 'Вы заблокированы', variant: 'destructive' });
         return;
       }
+      localStorage.setItem('user', JSON.stringify(data));
       setUser(data);
       toast({ title: authMode === 'login' ? 'Вход выполнен' : 'Регистрация завершена' });
     } else {
@@ -162,9 +172,16 @@ const Index = () => {
     
     fetchUsers();
     if (action === 'ban' && userId === user?.id) {
+      localStorage.removeItem('user');
       setUser(null);
       toast({ title: 'Вы заблокированы', variant: 'destructive' });
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    toast({ title: 'Выход выполнен' });
   };
 
   if (!user) {
@@ -316,7 +333,7 @@ const Index = () => {
               </Button>
             )}
             
-            <Button variant="ghost" onClick={() => setUser(null)}>
+            <Button variant="ghost" onClick={handleLogout}>
               <Icon name="LogOut" size={18} />
             </Button>
           </div>
