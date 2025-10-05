@@ -40,6 +40,7 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
     fetchFriends();
     fetchFrames();
     fetchUserFrames();
+    searchUsers('');
   }, []);
 
   const fetchFrames = async () => {
@@ -103,11 +104,7 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
   };
 
   const searchUsers = async (query: string) => {
-    if (!query) {
-      setSearchResults([]);
-      return;
-    }
-    const res = await fetch(`https://functions.poehali.dev/1727bd49-5413-4e32-91b6-cee6fcffa3de?action=search&user_id=${user.id}&search=${query}`);
+    const res = await fetch(`https://functions.poehali.dev/1727bd49-5413-4e32-91b6-cee6fcffa3de?action=search&user_id=${user.id}&search=${query || ''}`);
     const data = await res.json();
     setSearchResults(data);
   };
@@ -164,10 +161,11 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
         </DialogHeader>
 
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile">Профиль</TabsTrigger>
             <TabsTrigger value="friends">Друзья</TabsTrigger>
             <TabsTrigger value="library">Библиотека</TabsTrigger>
+            <TabsTrigger value="market">Маркет</TabsTrigger>
             <TabsTrigger value="frames-shop">Рамки</TabsTrigger>
             <TabsTrigger value="my-frames">Мои рамки</TabsTrigger>
             <TabsTrigger value="settings">Настройки</TabsTrigger>
@@ -276,19 +274,33 @@ export default function Profile({ user, onUpdate, onClose, onLogout }: ProfilePr
           <TabsContent value="library" className="space-y-2">
             {profile?.purchases?.map((game: any) => (
               <Card key={game.id} className="p-4">
-                <h3 className="font-bold">{game.title}</h3>
-                <p className="text-sm text-muted-foreground mb-2">{game.description}</p>
-                <Button asChild size="sm" className="bg-green-600">
-                  <a href={game.file_url} target="_blank">
-                    <Icon name="Download" size={16} className="mr-2" />
-                    Скачать
-                  </a>
-                </Button>
+                <div className="flex gap-4">
+                  {game.logo_url && (
+                    <img src={game.logo_url} alt={game.title} className="w-20 h-20 object-cover rounded" />
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-bold">{game.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{game.description}</p>
+                    <Button asChild size="sm" className="bg-green-600">
+                      <a href={game.file_url} target="_blank">
+                        <Icon name="Download" size={16} className="mr-2" />
+                        Скачать
+                      </a>
+                    </Button>
+                  </div>
+                </div>
               </Card>
             ))}
             {(!profile?.purchases || profile.purchases.length === 0) && (
               <p className="text-center text-muted-foreground py-8">Нет купленных игр</p>
             )}
+          </TabsContent>
+
+          <TabsContent value="market" className="space-y-4">
+            <p className="text-sm text-muted-foreground">Торговая площадка - купля/продажа игр между пользователями</p>
+            <Card className="p-4 bg-muted/50">
+              <p className="text-center text-muted-foreground">Функционал в разработке</p>
+            </Card>
           </TabsContent>
 
           <TabsContent value="frames-shop" className="grid grid-cols-2 gap-4">

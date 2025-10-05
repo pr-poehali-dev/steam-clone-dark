@@ -35,15 +35,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if status == 'all':
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at, price, is_popular FROM games ORDER BY created_at DESC"
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games ORDER BY created_at DESC"
                 )
             elif status == 'popular':
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = 'approved' AND is_popular = true ORDER BY created_at DESC"
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = 'approved' AND is_popular = true ORDER BY created_at DESC"
                 )
             else:
                 cur.execute(
-                    "SELECT id, title, description, category, age_rating, file_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = %s ORDER BY created_at DESC",
+                    "SELECT id, title, description, category, age_rating, file_url, logo_url, publisher_login, status, created_at, price, is_popular FROM games WHERE status = %s ORDER BY created_at DESC",
                     (status,)
                 )
             games = cur.fetchall()
@@ -59,11 +59,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'category': g[3],
                     'age_rating': g[4],
                     'file_url': g[5],
-                    'publisher_login': g[6],
-                    'status': g[7],
-                    'created_at': str(g[8]),
-                    'price': float(g[9]) if len(g) > 9 and g[9] is not None else 0.0,
-                    'is_popular': g[10] if len(g) > 10 else False
+                    'logo_url': g[6],
+                    'publisher_login': g[7],
+                    'status': g[8],
+                    'created_at': str(g[9]),
+                    'price': float(g[10]) if len(g) > 10 and g[10] is not None else 0.0,
+                    'is_popular': g[11] if len(g) > 11 else False
                 } for g in games])
             }
         
@@ -71,13 +72,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             
             cur.execute(
-                "INSERT INTO games (title, description, category, age_rating, file_url, publisher_login, status, price, contact_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "INSERT INTO games (title, description, category, age_rating, file_url, logo_url, publisher_login, status, price, contact_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                 (
                     body_data.get('title'),
                     body_data.get('description'),
                     body_data.get('category'),
                     body_data.get('age_rating'),
                     body_data.get('file_url'),
+                    body_data.get('logo_url'),
                     body_data.get('publisher_login'),
                     'pending',
                     body_data.get('price', 0),

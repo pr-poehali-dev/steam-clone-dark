@@ -29,6 +29,7 @@ interface Game {
   category: string;
   age_rating: string;
   file_url: string;
+  logo_url?: string;
   publisher_login: string;
   status: string;
   price: number;
@@ -61,6 +62,7 @@ const Index = () => {
     category: '',
     age_rating: '',
     file_url: '',
+    logo_url: '',
     price: 0,
     contact_email: ''
   });
@@ -84,6 +86,7 @@ const Index = () => {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
+        loadPurchasedGames(userData.id);
       } catch (e) {
         localStorage.removeItem('user');
       }
@@ -91,6 +94,15 @@ const Index = () => {
     fetchGames();
     fetchPopularGames();
   }, []);
+
+  const loadPurchasedGames = async (userId: number) => {
+    const res = await fetch(`https://functions.poehali.dev/170044e8-a677-4d2d-a212-1401ed1c7191?user_id=${userId}`);
+    const data = await res.json();
+    if (data.purchases) {
+      const gameIds = new Set(data.purchases.map((p: any) => p.id));
+      setPurchasedGames(gameIds);
+    }
+  };
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -173,7 +185,7 @@ const Index = () => {
     setShowPublishDialog(false);
     setPublishSuccess(true);
     setTimeout(() => setPublishSuccess(false), 5000);
-    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', price: 0, contact_email: '' });
+    setPublishForm({ title: '', description: '', category: '', age_rating: '', file_url: '', logo_url: '', price: 0, contact_email: '' });
   };
 
   const purchaseGame = async (gameId: number, price: number) => {
@@ -253,13 +265,20 @@ const Index = () => {
   };
 
   const handleUserAction = async (userId: number, action: string, value?: any) => {
-    await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
+    const res = await fetch('https://functions.poehali.dev/bbb9b4b5-e6d6-4b6d-9e10-cbfaf6120b5a', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, action, ...value })
     });
     
     fetchUsers();
+    
+    if (action === 'update_balance' && userId === user?.id && value?.balance !== undefined) {
+      const updated = { ...user, balance: value.balance };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+    }
+    
     if (action === 'ban' && userId === user?.id) {
       localStorage.removeItem('user');
       setUser(null);
@@ -446,6 +465,16 @@ const Index = () => {
                   </div>
                   
                   <div>
+                    <Label>Ссылка на логотип</Label>
+                    <Input 
+                      value={publishForm.logo_url}
+                      onChange={(e) => setPublishForm({ ...publishForm, logo_url: e.target.value })}
+                      className="mt-1"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                  
+                  <div>
                     <Label>Цена (₽)</Label>
                     <Input 
                       type="number"
@@ -492,8 +521,14 @@ const Index = () => {
               {popularGames.map((game) => (
                 <Card key={game.id} className="overflow-hidden hover:border-yellow-500 transition-all hover:shadow-lg hover:shadow-yellow-500/20 group animate-fade-in border-yellow-500/30">
                   <div className="aspect-video bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <Icon name="Star" size={64} className="text-yellow-500/60 group-hover:text-yellow-500 transition-all group-hover:scale-110 relative z-10" />
+                    {game.logo_url ? (
+                      <img src={game.logo_url} alt={game.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                        <Icon name="Star" size={64} className="text-yellow-500/60 group-hover:text-yellow-500 transition-all group-hover:scale-110 relative z-10" />
+                      </>
+                    )}
                   </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -584,8 +619,14 @@ const Index = () => {
               {filteredGames.map((game) => (
                 <Card key={game.id} className="overflow-hidden hover:border-primary transition-all hover:shadow-lg hover:shadow-primary/20 group animate-fade-in">
                   <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <Icon name="Gamepad2" size={64} className="text-primary/60 group-hover:text-primary transition-all group-hover:scale-110 relative z-10" />
+                    {game.logo_url ? (
+                      <img src={game.logo_url} alt={game.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                        <Icon name="Gamepad2" size={64} className="text-primary/60 group-hover:text-primary transition-all group-hover:scale-110 relative z-10" />
+                      </>
+                    )}
                   </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">

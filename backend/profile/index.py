@@ -42,7 +42,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 if user:
                     cur.execute(
-                        "SELECT g.id, g.title, g.description, g.category, g.price, g.file_url FROM purchases p JOIN games g ON p.game_id = g.id WHERE p.user_id = %s",
+                        "SELECT g.id, g.title, g.description, g.category, g.price, g.file_url, g.logo_url FROM purchases p JOIN games g ON p.game_id = g.id WHERE p.user_id = %s",
                         (user_id,)
                     )
                     purchases = cur.fetchall()
@@ -67,7 +67,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 'description': p[2],
                                 'category': p[3],
                                 'price': float(p[4]),
-                                'file_url': p[5]
+                                'file_url': p[5],
+                                'logo_url': p[6]
                             } for p in purchases]
                         })
                     }

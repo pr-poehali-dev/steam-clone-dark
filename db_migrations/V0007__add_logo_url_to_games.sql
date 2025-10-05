@@ -1,0 +1,1 @@
+ALTER TABLE games ADD COLUMN logo_url VARCHAR(500);
