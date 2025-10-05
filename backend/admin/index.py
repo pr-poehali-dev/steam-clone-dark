@@ -34,9 +34,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = params.get('action', 'users')
             
             if action == 'users':
-                cur.execute(
-                    "SELECT id, email, role, balance, is_banned, created_at FROM users ORDER BY created_at DESC"
-                )
+                search = params.get('search', '')
+                if search:
+                    cur.execute(
+                        "SELECT id, email, username, role, balance, is_banned, is_verified, created_at FROM users WHERE username ILIKE %s OR email ILIKE %s ORDER BY created_at DESC",
+                        (f'%{search}%', f'%{search}%')
+                    )
+                else:
+                    cur.execute(
+                        "SELECT id, email, username, role, balance, is_banned, is_verified, created_at FROM users ORDER BY created_at DESC"
+                    )
                 users = cur.fetchall()
                 
                 return {
@@ -46,10 +53,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps([{
                         'id': u[0],
                         'email': u[1],
-                        'role': u[2],
-                        'balance': float(u[3]),
-                        'is_banned': u[4],
-                        'created_at': str(u[5])
+                        'username': u[2],
+                        'role': u[3],
+                        'balance': float(u[4]),
+                        'is_banned': u[5],
+                        'is_verified': u[6],
+                        'created_at': str(u[7])
                     } for u in users])
                 }
         
@@ -123,6 +132,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute(
                     "UPDATE games SET is_popular = %s WHERE id = %s",
                     (is_popular, game_id)
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'success': True})
+                }
+            
+            elif action == 'toggle_verified':
+                user_id = body_data.get('user_id')
+                is_verified = body_data.get('is_verified')
+                cur.execute(
+                    "UPDATE users SET is_verified = %s WHERE id = %s",
+                    (is_verified, user_id)
                 )
                 conn.commit()
                 

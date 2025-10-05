@@ -71,7 +71,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             
             cur.execute(
-                "INSERT INTO games (title, description, category, age_rating, file_url, publisher_login, status, price) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "INSERT INTO games (title, description, category, age_rating, file_url, publisher_login, status, price, contact_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                 (
                     body_data.get('title'),
                     body_data.get('description'),
@@ -80,7 +80,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     body_data.get('file_url'),
                     body_data.get('publisher_login'),
                     'pending',
-                    body_data.get('price', 0)
+                    body_data.get('price', 0),
+                    body_data.get('contact_email')
                 )
             )
             game_id = cur.fetchone()[0]

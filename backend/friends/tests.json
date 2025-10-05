@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "Search users",
+      "method": "GET",
+      "path": "/?action=search&user_id=1&search=admin",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
